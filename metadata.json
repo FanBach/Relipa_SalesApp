@@ -1,0 +1,5 @@
+{
+  "name": "Relipa",
+  "description": "A comprehensive ERP system for managing clients, projects, contracts, and revenue allocations based on a relational database schema.",
+  "requestFramePermissions": []
+}
