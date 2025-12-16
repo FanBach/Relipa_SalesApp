@@ -64,27 +64,96 @@ export interface Project {
   div_id?: string; // For UI display
 }
 
+// Complex types for Contract Form S005
+export interface ContractEffort {
+  role: string; // Item 21
+  man_month: number; // Item 22
+}
+
+export interface ContractDivision {
+  div_name: string; // Item 26
+  percentage: number; // Item 27
+}
+
+export interface PaymentMilestone {
+  date: string; // Item 34
+  amount: number; // Item 35
+  percent: number; // Item 36
+  note: string; // Item 37
+}
+
+export interface AllocationItem {
+  month: string; // Item 45 (mm/yyyy)
+  amount: number; // Item 46
+  man_month: number; // Item 47
+}
+
+export interface ContractPayer {
+  name: string; // Item 30
+  email: string; // Item 31
+  ratio: number; // Item 58
+}
+
+export interface ProjectMilestone {
+  name: string; // Item 52
+  start_date: string; // Item 53
+  end_date: string; // Item 54
+}
+
+export interface PeriodicConfig {
+  start_date: string; // Item 62
+  cycle: number; // Item 63
+  amount: number; // Item 64
+  note: string; // Item 65
+}
+
 export interface Contract {
   id: number;
-  code: string;
-  project_id: number;
-  client_id: number;
-  name: string;
-  status_id: number; // 1: Chờ ký, 2: Đã ký, 3: Hết hạn
-  start_date: string;
-  end_date: string;
-  total_value: number;
-  net_revenue: number;
-  currency: string;
-  type: string; // ODC, Project base
+  code: string; // Item 7
+  project_id: number; // Item 4
+  client_id: number; // Item 5
+  name: string; 
+  status_id: number; // Item 13: 1. Đã ký, 2. Dự báo, 3. Chờ ký
+  start_date: string; // Item 11
+  end_date: string; // Item 12
+  total_value: number; // Item 14
+  net_revenue: number; 
+  currency: string; // Item 15
+  currency_unit?: string; // Item 17
+  type: string; // Item 6: ODC, Project based
   progress: number;
-  man_month_sale?: number;
-  man_month_div?: number;
-  commission_fee?: number;
-  discount?: number;
-  other_fee?: number;
-  sign_date?: string;
-  accepted_date?: string;
+  
+  man_month_sale?: number; // Item 67
+  man_month_div?: number; // Item 19
+  
+  commission_fee?: number; // Item 16
+  discount?: number; // Item 18
+  other_fee?: number; // Item 68
+  
+  sign_date?: string; // Item 9
+  accepted_date?: string; 
+  note?: string; // Item 10
+  
+  // S005 Advanced Fields
+  backlog_link?: string; // Item 24
+  is_extend?: boolean; // Item 25
+  is_transfer_debt?: boolean; // Item 28, 56
+  is_periodic_invoice?: boolean; // Item 33, 61
+  
+  efforts?: ContractEffort[]; // Item 20-23
+  contract_divisions?: ContractDivision[]; // Item 26-27
+  payers?: ContractPayer[]; // Item 29-32, 57-60
+  periodic_config?: PeriodicConfig; // Item 61-65
+  payment_milestones?: PaymentMilestone[]; // Item 34-39
+  project_milestones?: ProjectMilestone[]; // Item 51-55
+  allocations?: AllocationItem[]; // Item 40-48, 66
+}
+
+export interface InvoiceNote {
+  id: number;
+  content: string;
+  created_by: string;
+  created_at: string;
 }
 
 export interface Invoice {
@@ -92,13 +161,51 @@ export interface Invoice {
   invoice_no: string;
   project_id: number;
   client_id: number;
+  contract_id?: number; // Added
+  
   issue_date: string;
   due_date: string;
-  total_amount: number;
-  currency: string;
-  status_id: number; // 1: Draft, 2: Sent, 3: Paid, 4: Overdue
-  amount_after_vat?: number;
+  
+  // Amounts
+  contract_value?: number; // Added: Giá trị theo hợp đồng
+  deduction?: number; // Added: Giảm trừ công số
+  
+  subtotal?: number; // Value before VAT (Calculated from contract_value - deduction)
+  vat_percent?: number;
+  vat_amount?: number;
+  total_amount: number; // Value after VAT
+  amount_after_vat?: number; // Redundant but consistent with previous types
   paid_amount?: number;
+  
+  currency: string;
+  exchange_rate?: number;
+  
+  status_id: number; // 1: Draft, 2: Sent, 3: Paid, 4: Overdue, 5: Cancelled
+  status_name?: string; // "Đã gửi", "Quá hạn 10 ngày", "Đã thanh toán"
+  
+  // Content
+  content_jp?: string;
+  content_vn?: string;
+  legal_entity?: string; // e.g., Relipa JP
+  
+  notes?: InvoiceNote[];
+  payment_date?: string;
+}
+
+export interface BankStatement {
+  id: number;
+  document_date: string; // Ngày chứng từ
+  document_no: string; // Số chứng từ
+  object_code: string; // Mã đối tượng
+  object_name: string; // Tên đối tượng
+  amount: number;
+  currency: string;
+  invoice_id?: number; // Linked Invoice
+  status: 'Chưa duyệt' | 'Đã duyệt' | 'Chưa xác định';
+  description?: string; // Diễn giải
+  address?: string;
+  bank_account?: string;
+  bank_name?: string;
 }
 
 export interface RevenueAllocation {

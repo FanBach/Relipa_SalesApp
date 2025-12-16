@@ -1,4 +1,5 @@
-import { Client, Invoice, Project, RevenueAllocation, User, Notification, GraphData, Contract, MonthlyData, MasterCategory, Permission, ChangeLog } from '../types';
+
+import { Client, Invoice, Project, RevenueAllocation, User, Notification, GraphData, Contract, MonthlyData, MasterCategory, Permission, ChangeLog, BankStatement } from '../types';
 
 const USERS: User[] = [
   { id: 1, email: "duc.tran@relipa.com", full_name: "Tran Van Duc", role_main: "Sale Manager", is_active: true, phone: "+84-999-0101", created_at: "10:00 AM, 21/05/2025", updated_at: "10:00 AM, 21/05/2025" },
@@ -37,14 +38,24 @@ const PROJECTS: Project[] = [
 ];
 
 const CONTRACTS: Contract[] = [
-  { id: 1, code: "MBA-C-001", project_id: 1, client_id: 1, name: "Hợp đồng Mobile Banking", status_id: 2, start_date: "18/05/2025", end_date: "18/05/2026", total_value: 500000, net_revenue: 450000, currency: "USD", type: "ODC", progress: 50, sign_date: "15/05/2025", accepted_date: "15/05/2025", commission_fee: 10000, discount: 5000, other_fee: 0 },
+  { id: 1, code: "MBA-C-001", project_id: 1, client_id: 1, name: "Hợp đồng Mobile Banking", status_id: 2, start_date: "18/05/2025", end_date: "18/05/2026", total_value: 500000, net_revenue: 450000, currency: "USD", type: "ODC", progress: 50, sign_date: "15/05/2025", accepted_date: "15/05/2025", commission_fee: 10000, discount: 5000, other_fee: 0, is_transfer_debt: true, is_periodic_invoice: true },
   { id: 2, code: "MBA-C-002", project_id: 1, client_id: 1, name: "Hợp đồng Maintenance", status_id: 1, start_date: "19/05/2026", end_date: "19/05/2027", total_value: 120000, net_revenue: 120000, currency: "USD", type: "Project base", progress: 0, sign_date: "", accepted_date: "", commission_fee: 0, discount: 0, other_fee: 0 },
 ];
 
 const INVOICES: Invoice[] = [
-  { id: 1, invoice_no: "INV-001", project_id: 1, client_id: 1, issue_date: "23/06/2025", due_date: "23/07/2025", total_amount: 50000.00, currency: "USD", status_id: 3, amount_after_vat: 55000, paid_amount: 55000 },
-  { id: 2, invoice_no: "INV-002", project_id: 1, client_id: 1, issue_date: "23/08/2025", due_date: "23/09/2025", total_amount: 50000.00, currency: "USD", status_id: 2, amount_after_vat: 55000, paid_amount: 0 },
-  { id: 3, invoice_no: "INV-003", project_id: 2, client_id: 2, issue_date: "2023-06-15", due_date: "2023-07-15", total_amount: 42500.00, currency: "EUR", status_id: 4, amount_after_vat: 46000, paid_amount: 0 },
+  { id: 1, invoice_no: "FPT-MBA-001", project_id: 1, client_id: 1, issue_date: "18/05/2025", due_date: "18/05/2025", total_amount: 500000.00, currency: "USD", status_id: 2, status_name: "Đã gửi", amount_after_vat: 550000, paid_amount: 550000, exchange_rate: 2000 },
+  { id: 2, invoice_no: "FPT-MBA-002", project_id: 1, client_id: 1, issue_date: "18/05/2025", due_date: "18/05/2025", total_amount: 500000.00, currency: "USD", status_id: 4, status_name: "Quá hạn 10 ngày", amount_after_vat: 550000, paid_amount: 0 },
+  { id: 3, invoice_no: "FPT-MBA-003", project_id: 1, client_id: 1, issue_date: "18/05/2025", due_date: "18/05/2025", total_amount: 500000.00, currency: "USD", status_id: 3, status_name: "Đã thanh toán", amount_after_vat: 550000, paid_amount: 550000, payment_date: "18/05/2025" },
+  { id: 4, invoice_no: "FPT-MBA-004", project_id: 1, client_id: 1, issue_date: "18/05/2025", due_date: "18/05/2025", total_amount: 500000.00, currency: "USD", status_id: 3, status_name: "Đã thanh toán", amount_after_vat: 550000, paid_amount: 550000 },
+  { id: 5, invoice_no: "FPT-MBA-005", project_id: 1, client_id: 1, issue_date: "18/05/2025", due_date: "18/05/2025", total_amount: 500000.00, currency: "USD", status_id: 4, status_name: "Quá hạn 20 ngày", amount_after_vat: 550000, paid_amount: 0 },
+  { id: 6, invoice_no: "FPT-MBA-006", project_id: 1, client_id: 1, issue_date: "18/05/2025", due_date: "18/05/2025", total_amount: 500000.00, currency: "USD", status_id: 5, status_name: "Đã huỷ", amount_after_vat: 550000, paid_amount: 0 },
+  { id: 7, invoice_no: "FPT-MBA-007", project_id: 1, client_id: 1, issue_date: "18/05/2025", due_date: "18/05/2025", total_amount: 500000.00, currency: "USD", status_id: 1, status_name: "Đã tạo", amount_after_vat: 550000, paid_amount: 0 },
+];
+
+const BANK_STATEMENTS: BankStatement[] = [
+  { id: 1, document_date: '23/6/2025', document_no: 'MBA-C-001', object_code: 'FPT-001', object_name: 'FPT Software', amount: 500000.00, currency: 'USD', invoice_id: 1, status: 'Chưa duyệt', description: 'Thanh toan dot 1' },
+  { id: 2, document_date: '23/6/2025', document_no: 'MBA-C-001', object_code: 'FPT-001', object_name: 'FPT Software', amount: 500000.00, currency: 'USD', invoice_id: undefined, status: 'Chưa xác định', description: 'Chuyen khoan' },
+  { id: 3, document_date: '23/6/2025', document_no: 'MBA-C-001', object_code: 'FPT-001', object_name: 'FPT Software', amount: 500000.00, currency: 'USD', invoice_id: 3, status: 'Đã duyệt', description: 'Thanh toan dot 2' },
 ];
 
 const REVENUE_ALLOCATIONS: RevenueAllocation[] = [
@@ -95,6 +106,7 @@ export const getMockData = () => ({
   projects: PROJECTS,
   contracts: CONTRACTS,
   invoices: INVOICES,
+  statements: BANK_STATEMENTS,
   allocations: REVENUE_ALLOCATIONS,
   notifications: NOTIFICATIONS,
   monthlyData: MONTHLY_DATA,

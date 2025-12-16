@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { getMockData } from './services/mockData';
 import Dashboard from './components/Dashboard';
-import { Client, Project, Invoice, Contract, User, Permission, Notification, MonthlyData, MasterCategory, RevenueAllocation } from './types';
+import { Client, Project, Invoice, Contract, User, Permission, Notification, MonthlyData, MasterCategory, RevenueAllocation, BankStatement } from './types';
 
 // Import refactored components
 import { Header, Sidebar, LoginScreen } from './components/Layout';
 import { ClientForm, ClientsModule, ClientDetailView } from './components/ClientFeatures';
-import { ProjectForm, ProjectsModule, ContractForm, ContractsModule } from './components/ProjectContractFeatures';
-import { InvoiceForm, InvoicesModule, RevenueForm, RevenueModule } from './components/FinanceFeatures';
+import { ProjectForm, ProjectsModule, ProjectDetailView, ContractForm, ContractsModule, ContractDetailView } from './components/ProjectContractFeatures';
+import { InvoiceForm, InvoicesModule, InvoiceDetailView, RevenueForm, RevenueModule } from './components/FinanceFeatures';
 import { AccountForm, AccountsModule, PermissionsModule, MasterModule, LogWorkforceForm, WorkforceModule, NotificationsView } from './components/SystemFeatures';
 
 const App = () => {
@@ -21,6 +21,7 @@ const App = () => {
   const [projects, setProjects] = useState<Project[]>(initialData.projects);
   const [contracts, setContracts] = useState<Contract[]>(initialData.contracts);
   const [invoices, setInvoices] = useState<Invoice[]>(initialData.invoices);
+  const [statements, setStatements] = useState<BankStatement[]>(initialData.statements);
   const [allocations, setAllocations] = useState<RevenueAllocation[]>(initialData.allocations);
   const [users, setUsers] = useState<User[]>(initialData.users);
   const [notifications, setNotifications] = useState<Notification[]>(initialData.notifications);
@@ -32,8 +33,11 @@ const App = () => {
   const [activeModule, setActiveModule] = useState<string>(''); 
   const [editItem, setEditItem] = useState<any>(null); // If null, it's add mode. If set, it's edit.
   
-  // Specific state for viewing Client Detail
+  // Specific state for viewing Details
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
+  const [viewingProject, setViewingProject] = useState<Project | null>(null);
+  const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,6 +47,9 @@ const App = () => {
     setEditItem(null);
     setActiveModule('');
     setViewingClient(null);
+    setViewingProject(null);
+    setViewingContract(null);
+    setViewingInvoice(null);
   }, [location.pathname]);
 
   // --- CRUD Handlers ---
@@ -69,6 +76,9 @@ const App = () => {
   const handleSaveProject = (projectData: Project) => {
       if (projectData.id) {
           setProjects(prev => prev.map(p => p.id === projectData.id ? projectData : p));
+          if (viewingProject && viewingProject.id === projectData.id) {
+              setViewingProject(projectData);
+          }
       } else {
           setProjects(prev => [...prev, { ...projectData, id: Date.now() }]);
       }
@@ -85,11 +95,30 @@ const App = () => {
   const handleSaveContract = (contractData: Contract) => {
     if (contractData.id) {
         setContracts(prev => prev.map(c => c.id === contractData.id ? contractData : c));
+        if (viewingContract && viewingContract.id === contractData.id) {
+            setViewingContract(contractData);
+        }
     } else {
         setContracts(prev => [...prev, { ...contractData, id: Date.now() }]);
     }
     setActiveModule('');
     setEditItem(null);
+  };
+
+  const handleExtendContract = (contract: Contract) => {
+      // Logic for extending: clone data but reset ID and dates
+      const clonedData = { 
+          ...contract, 
+          id: undefined, 
+          code: '', // Reset code or maybe generate new? UC says "form tạo mới"
+          start_date: '', 
+          end_date: '', 
+          sign_date: '',
+          accepted_date: '',
+          status_id: 1 // Reset to pending
+      };
+      setEditItem(clonedData);
+      setActiveModule('contractForm');
   };
 
   const handleDeleteContract = (id: number) => {
@@ -101,6 +130,9 @@ const App = () => {
   const handleSaveInvoice = (invoiceData: Invoice) => {
       if (invoiceData.id) {
           setInvoices(prev => prev.map(i => i.id === invoiceData.id ? invoiceData : i));
+          if (viewingInvoice && viewingInvoice.id === invoiceData.id) {
+              setViewingInvoice(invoiceData);
+          }
       } else {
           setInvoices(prev => [...prev, { ...invoiceData, id: Date.now() }]);
       }
@@ -215,6 +247,7 @@ const App = () => {
                     <ContractForm 
                         initialData={editItem} 
                         projects={projects}
+                        clients={clients}
                         onBack={() => { setActiveModule(''); setEditItem(null); }} 
                         onSave={handleSaveContract} 
                     />
@@ -272,34 +305,72 @@ const App = () => {
                             )
                         } />
                         <Route path="/projects" element={
-                            <ProjectsModule 
-                                data={projects} 
-                                clients={clients}
-                                onAdd={() => setActiveModule('projectForm')}
-                                onEdit={(item: Project) => { setEditItem(item); setActiveModule('projectForm'); }}
-                                onDelete={handleDeleteProject}
-                            />
+                            viewingProject ? (
+                                <ProjectDetailView 
+                                    project={viewingProject}
+                                    onBack={() => setViewingProject(null)}
+                                    onEdit={(p: Project) => { setEditItem(p); setActiveModule('projectForm'); }}
+                                    onNavigate={(path) => { setViewingProject(null); navigate(path); }}
+                                />
+                            ) : (
+                                <ProjectsModule 
+                                    data={projects} 
+                                    clients={clients}
+                                    masterData={masterData}
+                                    onAdd={() => setActiveModule('projectForm')}
+                                    onEdit={(item: Project) => { setEditItem(item); setActiveModule('projectForm'); }}
+                                    onDelete={handleDeleteProject}
+                                    onViewDetail={(item: Project) => setViewingProject(item)}
+                                />
+                            )
                         } />
                         <Route path="/contracts" element={
-                            <ContractsModule 
-                                data={contracts} 
-                                projects={projects} 
-                                clients={clients}
-                                onAdd={() => setActiveModule('contractForm')}
-                                onEdit={(item: Contract) => { setEditItem(item); setActiveModule('contractForm'); }}
-                                onDelete={handleDeleteContract}
-                                onViewDetail={(item: Contract) => { /* Detail view implementation simplified */ }}
-                            />
+                            viewingContract ? (
+                                <ContractDetailView 
+                                    contract={viewingContract}
+                                    project={projects.find(p => p.id === viewingContract.project_id)}
+                                    invoices={invoices}
+                                    onBack={() => setViewingContract(null)}
+                                    onEdit={(c: Contract) => { setEditItem(c); setActiveModule('contractForm'); }}
+                                    onExtend={handleExtendContract}
+                                    onNavigate={(path) => { setViewingContract(null); navigate(path); }}
+                                />
+                            ) : (
+                                <ContractsModule 
+                                    data={contracts} 
+                                    projects={projects} 
+                                    clients={clients}
+                                    permissions={permissions}
+                                    onAdd={() => setActiveModule('contractForm')}
+                                    onEdit={(item: Contract) => { setEditItem(item); setActiveModule('contractForm'); }}
+                                    onDelete={handleDeleteContract}
+                                    onViewDetail={(item: Contract) => setViewingContract(item)}
+                                />
+                            )
                         } />
                          <Route path="/invoices" element={
-                            <InvoicesModule 
-                                data={invoices}
-                                projects={projects}
-                                clients={clients}
-                                onAdd={() => setActiveModule('invoiceForm')} 
-                                onEdit={(item: Invoice) => { setEditItem(item); setActiveModule('invoiceForm'); }}
-                                onDelete={handleDeleteInvoice}
-                            />
+                            viewingInvoice ? (
+                                <InvoiceDetailView
+                                    invoice={viewingInvoice}
+                                    project={projects.find(p => p.id === viewingInvoice.project_id)}
+                                    client={clients.find(c => c.id === viewingInvoice.client_id)}
+                                    contract={contracts.find(c => c.project_id === viewingInvoice.project_id && c.client_id === viewingInvoice.client_id)} // Simplistic matching
+                                    onBack={() => setViewingInvoice(null)}
+                                    onEdit={(i: Invoice) => { setEditItem(i); setActiveModule('invoiceForm'); }}
+                                />
+                            ) : (
+                                <InvoicesModule 
+                                    data={invoices}
+                                    statements={statements}
+                                    projects={projects}
+                                    clients={clients}
+                                    contracts={contracts}
+                                    onAdd={() => setActiveModule('invoiceForm')} 
+                                    onEdit={(item: Invoice) => { setEditItem(item); setActiveModule('invoiceForm'); }}
+                                    onDelete={handleDeleteInvoice}
+                                    onViewDetail={(item: Invoice) => setViewingInvoice(item)}
+                                />
+                            )
                         } />
                         <Route path="/revenue" element={
                             <RevenueModule 
