@@ -1,15 +1,22 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { getMockData } from './services/mockData';
 import Dashboard from './components/Dashboard';
 import { Client, Project, Invoice, Contract, User, Permission, Notification, MonthlyData, MasterCategory, RevenueAllocation, BankStatement } from './types';
 
-// Import refactored components
+// Import modular components
 import { Header, Sidebar, LoginScreen } from './components/Layout';
-import { ClientForm, ClientsModule, ClientDetailView } from './components/ClientFeatures';
-import { ProjectForm, ProjectsModule, ProjectDetailView, ContractForm, ContractsModule, ContractDetailView } from './components/ProjectContractFeatures';
-import { InvoiceForm, InvoicesModule, InvoiceDetailView, RevenueForm, RevenueModule } from './components/FinanceFeatures';
-import { AccountForm, AccountsModule, PermissionsModule, MasterModule, LogWorkforceForm, WorkforceModule, NotificationsView } from './components/SystemFeatures';
+import { ClientForm, ClientsModule, ClientDetailView } from './components/Clients';
+import { ProjectForm, ProjectsModule, ProjectDetailView } from './components/Projects';
+import { ContractForm, ContractsModule, ContractDetailView } from './components/Contracts';
+import { InvoiceForm, InvoicesModule, InvoiceDetailView } from './components/Invoices';
+import { RevenueForm, RevenueModule } from './components/Revenue';
+import { LogWorkforceForm, WorkforceModule } from './components/Workforce';
+import { AccountForm, AccountsModule } from './components/Accounts';
+import { PermissionsModule } from './components/Permissions';
+import { MasterModule } from './components/Settings';
+import { NotificationsView } from './components/Notifications';
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -118,16 +125,15 @@ const App = () => {
   };
 
   const handleExtendContract = (contract: Contract) => {
-      // Logic for extending: clone data but reset ID and dates
       const clonedData = { 
           ...contract, 
           id: undefined, 
-          code: '', // Reset code or maybe generate new? UC says "form tạo mới"
+          code: '', 
           start_date: '', 
           end_date: '', 
           sign_date: '',
           accepted_date: '',
-          status_id: 1 // Reset to pending
+          status_id: 1 
       };
       setEditItem(clonedData);
       setActiveModule('contractForm');
@@ -374,73 +380,4 @@ const App = () => {
                                     invoice={viewingInvoice}
                                     project={projects.find(p => p.id === viewingInvoice.project_id)}
                                     client={clients.find(c => c.id === viewingInvoice.client_id)}
-                                    contract={contracts.find(c => c.project_id === viewingInvoice.project_id && c.client_id === viewingInvoice.client_id)} // Simplistic matching
-                                    onBack={() => setViewingInvoice(null)}
-                                    onEdit={(i: Invoice) => { setEditItem(i); setActiveModule('invoiceForm'); }}
-                                />
-                            ) : (
-                                <InvoicesModule 
-                                    data={invoices}
-                                    statements={statements}
-                                    projects={projects}
-                                    clients={clients}
-                                    contracts={contracts}
-                                    onAdd={() => setActiveModule('invoiceForm')} 
-                                    onEdit={(item: Invoice) => { setEditItem(item); setActiveModule('invoiceForm'); }}
-                                    onDelete={handleDeleteInvoice}
-                                    onViewDetail={(item: Invoice) => setViewingInvoice(item)}
-                                />
-                            )
-                        } />
-                        <Route path="/revenue" element={
-                            <RevenueModule 
-                                data={allocations}
-                                invoices={invoices}
-                                users={users}
-                                onAdd={() => setActiveModule('revenueForm')}
-                                onEdit={(item: RevenueAllocation) => { setEditItem(item); setActiveModule('revenueForm'); }}
-                                onDelete={handleDeleteAllocation}
-                            />
-                        } />
-                        <Route path="/accounts" element={
-                            <AccountsModule 
-                                data={users} 
-                                onAdd={() => setActiveModule('accountForm')} 
-                                onDelete={handleDeleteAccount}
-                            />
-                        } />
-                        <Route path="/workforce" element={
-                            <WorkforceModule 
-                                projects={projects} 
-                                clients={clients} 
-                                monthlyData={monthlyData} 
-                                onLog={() => setActiveModule('logWorkforce')} 
-                            />
-                        } />
-                        <Route path="/settings" element={<MasterModule data={masterData} />} />
-                        <Route path="/permissions" element={
-                            <PermissionsModule 
-                                data={permissions} 
-                                onUpdatePermission={handleUpdatePermission}
-                                onAddRole={handleAddRole}
-                                onDeleteRole={handleDeleteRole}
-                                onSave={handleSavePermissions}
-                            />
-                        } />
-                        <Route path="/notifications" element={<NotificationsView notifications={notifications} />} />
-                        <Route path="*" element={<div className="text-center text-slate-400 mt-20">Select a module from the sidebar</div>} />
-                    </Routes>
-                )}
-            </main>
-        </div>
-    </div>
-  );
-};
-
-const AppWrapper = () => (
-    <Router>
-        <App />
-    </Router>
-);
-
-export default AppWrapper;
+                                    contract={contracts.find(c =>
