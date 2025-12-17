@@ -33,7 +33,7 @@ const CLIENTS: Client[] = [
 
 const PROJECTS: Project[] = [
   { id: 1, code: "FPT-MBA-001", name: "Mobile banking app", client_id: 1, status_id: 2, division: "Division 1", technology: "Blockchain", man_month: 50, start_date: "18/05/2025", end_date: "18/05/2026", expected_revenue: 500000.00, currency: "USD", sales_owner_id: 1, div_id: "Division 1" },
-  { id: 2, code: "PRJ-Beta", name: "Cloud Migration", client_id: 2, status_id: 2, division: "Division 2", technology: "AWS", man_month: 20, start_date: "2023-03-01", end_date: "2023-09-30", expected_revenue: 85000.00, currency: "EUR", sales_owner_id: 2, div_id: "Division 2" },
+  { id: 2, code: "PRJ-Beta", name: "Cloud Migration", client_id: 2, status_id: 2, division: "Division 2", technology: "AWS", man_month: 20, start_date: "2023-03-01", end_date: "2023-09-30", expected_revenue: 85000.00, currency: "USD", sales_owner_id: 2, div_id: "Division 2" },
   { id: 3, code: "PRJ-Gamma", name: "AI Integration", client_id: 3, status_id: 1, division: "Division 1", technology: "Python/AI", man_month: 120, start_date: "2023-10-01", end_date: "2024-04-01", expected_revenue: 250000.00, currency: "USD", sales_owner_id: 1, div_id: "Division 1" },
 ];
 
@@ -76,9 +76,12 @@ const CHANGE_LOGS: ChangeLog[] = [
 const MONTHLY_DATA: MonthlyData[] = [];
 PROJECTS.forEach(p => {
   for (let m = 1; m <= 12; m++) {
+    // Generate Workforce Plan
     MONTHLY_DATA.push({ projectId: p.id, month: m, value: Math.floor(Math.random() * 10) + 5, type: 'plan' });
+    // Generate Workforce Actual
     MONTHLY_DATA.push({ projectId: p.id, month: m, value: Math.floor(Math.random() * 10) + 5, type: 'actual' });
-    MONTHLY_DATA.push({ projectId: p.id, month: m, value: 50000, type: 'revenue' });
+    // Generate Revenue
+    MONTHLY_DATA.push({ projectId: p.id, month: m, value: 500000.00, type: 'revenue' });
   }
 });
 
@@ -95,9 +98,10 @@ const PERMISSIONS: Permission[] = [
   { id: 2, role: "Guest (default)", module: "Dự án", canView: true, canAdd: false, canEdit: false },
   { id: 3, role: "Guest (default)", module: "Hợp đồng", canView: true, canAdd: false, canEdit: false },
   { id: 4, role: "Guest (default)", module: "Hoá đơn", canView: true, canAdd: false, canEdit: false },
-  { id: 5, role: "Guest (default)", module: "Doanh thu", canView: false, canAdd: false, canEdit: false },
+  { id: 5, role: "Guest (default)", module: "Doanh thu", canView: true, canAdd: false, canEdit: false },
   { id: 6, role: "Sale Admin", module: "Khách hàng", canView: true, canAdd: true, canEdit: true },
   { id: 7, role: "Sale Admin", module: "Dự án", canView: true, canAdd: true, canEdit: true },
+  { id: 8, role: "Sale Admin", module: "Doanh thu", canView: true, canAdd: true, canEdit: true },
 ];
 
 export const getMockData = () => ({

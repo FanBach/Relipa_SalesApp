@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Edit3, Trash2, Search, Filter, Calendar as CalendarIcon, ChevronDown, ChevronRight, X, ArrowLeft, Download, Plus, FileText, Image as ImageIcon, Clock, CheckCircle } from 'lucide-react';
-import { Invoice, RevenueAllocation, Project, Client, User, Contract, InvoiceNote, BankStatement } from '../types';
+import { Invoice, RevenueAllocation, Project, Client, User, Contract, InvoiceNote, BankStatement, MonthlyData, MasterCategory, Permission } from '../types';
 import { StatusBadge, FormHeader, FilterBar } from './Shared';
+import { useNavigate } from 'react-router-dom';
+import { getMockData } from '../services/mockData';
 
+// ... (InvoiceForm, InvoiceDetailView, InvoicesModule remain the same) ...
 export const InvoiceForm = ({ initialData, projects, clients, contracts, onBack, onSave }: any) => {
     const [formData, setFormData] = useState<Partial<Invoice>>(initialData || {
         invoice_no: '',
@@ -877,6 +880,8 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
 };
 
 export const RevenueForm = ({ initialData, invoices, users, onBack, onSave }: any) => {
+    // ... (This form is less relevant for the new "Revenue Grid" view, but keeping it if needed for allocation)
+    // For now, I'll keep the existing code as it is a CRUD form
     const [formData, setFormData] = useState<Partial<RevenueAllocation>>(initialData || {
         invoice_id: invoices[0]?.id,
         sales_user_id: users[0]?.id,
@@ -923,47 +928,308 @@ export const RevenueForm = ({ initialData, invoices, users, onBack, onSave }: an
 };
 
 export const RevenueModule = ({ data, invoices, users, onAdd, onEdit, onDelete }: any) => {
+    // --- Mock Data Access (since props might not have everything) ---
+    const mockData = getMockData(); // Access global mock data to ensure we have monthlyData
+    const allProjects = mockData.projects;
+    const allClients = mockData.clients;
+    const allContracts = mockData.contracts;
+    const allMonthlyData = mockData.monthlyData;
+    const masterData = mockData.masterCategories;
+    const permissions = mockData.permissions;
+
+    // --- State ---
+    const [filters, setFilters] = useState({
+        search: '',
+        year: new Date().getFullYear(),
+        division: 'All',
+        status: 'All', // Contract Status: All, Signed, Pending, Forecast
+        currency: 'USD'
+    });
+    
+    // Permission Check (EX001)
+    const canView = permissions?.find((p: Permission) => p.module === 'Doanh thu' && p.role === 'Sale Admin')?.canView ?? true;
+    
+    // Error States (EX002, EX003)
+    const [systemError, setSystemError] = useState(false);
+    const [filterError, setFilterError] = useState('');
+
+    const navigate = useNavigate();
+
+    if (!canView) {
+        return <div className="p-6 text-red-600 font-medium">Tài khoản chưa được cấp quyền.</div>;
+    }
+
+    if (systemError) {
+        return <div className="p-6 text-red-600 font-medium">Có lỗi xảy ra, vui lòng thử lại sau.</div>;
+    }
+
+    // --- Logic ---
+
+    // 1. Filter Projects based on inputs
+    const filteredProjects = allProjects.filter((p: Project) => {
+        // EX003 - Simulate validation
+        if (filters.search.length > 255) {
+            // This would normally setFilterError, doing it in render for simplicity of state flow
+            return false; 
+        }
+
+        // Search Name/Client
+        if (filters.search) {
+            const term = filters.search.toLowerCase();
+            const client = allClients.find(c => c.id === p.client_id);
+            if (!p.name.toLowerCase().includes(term) && !client?.name.toLowerCase().includes(term)) {
+                return false;
+            }
+        }
+
+        // Division
+        if (filters.division !== 'All' && p.division !== filters.division) return false;
+
+        // Status (mapped from Contract status primarily, or Project status)
+        // For simplicity, let's use Project status or assume a contract exists
+        if (filters.status !== 'All') {
+            const contract = allContracts.find(c => c.project_id === p.id);
+            // Map filter text to ID or logic
+            if (filters.status === 'Đã ký' && contract?.status_id !== 2) return false;
+            if (filters.status === 'Chờ ký' && contract?.status_id !== 1) return false;
+            if (filters.status === 'Dự kiến' && contract?.status_id !== 3) return false;
+        }
+
+        return true;
+    });
+
+    // 2. Currency Conversion Helper
+    const convertCurrency = (amount: number, from: string, to: string): number => {
+        // Mock rates
+        const rates: Record<string, number> = {
+            'USD': 1,
+            'JPY': 150,
+            'VND': 25000
+        };
+        if (!rates[from] || !rates[to]) return amount;
+        return (amount / rates[from]) * rates[to];
+    };
+
+    // 3. Aggregate Monthly Data
+    // We need an array of 12 months for totals
+    const totalMonthlyRevenue = Array(12).fill(0);
+
+    const tableRows = filteredProjects.map((p: Project) => {
+        const client = allClients.find(c => c.id === p.client_id);
+        const contract = allContracts.find(c => c.project_id === p.id);
+        
+        // Get revenue data for this project
+        // Note: Mock data doesn't have year, we assume it matches the selected year for demo
+        const monthlyRevenues = Array(12).fill(0).map((_, idx) => {
+            const monthIndex = idx + 1;
+            const dataPoint = allMonthlyData.find((d: MonthlyData) => 
+                d.projectId === p.id && d.month === monthIndex && d.type === 'revenue'
+            );
+            const rawVal = dataPoint ? dataPoint.value : 0;
+            // Project currency is usually in Project or Contract. Let's use Project currency.
+            const val = convertCurrency(rawVal, p.currency, filters.currency);
+            
+            // Add to total
+            totalMonthlyRevenue[idx] += val;
+            
+            return val;
+        });
+
+        return {
+            project: p,
+            client,
+            contract,
+            monthlyRevenues
+        };
+    });
+
+    const handleFilterChange = (key: string, value: any) => {
+        if (key === 'search' && value.length > 255) {
+            setFilterError('Điều kiện lọc không hợp lệ.');
+        } else {
+            setFilterError('');
+        }
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            search: '',
+            year: new Date().getFullYear(),
+            division: 'All',
+            status: 'All',
+            currency: 'USD'
+        });
+        setFilterError('');
+    };
+
+    const formatMoney = (amount: number) => {
+        if (amount === 0) return '-';
+        return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + filters.currency;
+    };
+
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
-            <div className="p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh] flex flex-col">
+            <div className="p-6 flex-1 flex flex-col">
                 <h2 className="text-2xl font-bold text-slate-900 mb-6">Quản lý doanh thu</h2>
-                 <FilterBar 
-                    placeholder="Tìm kiếm..." 
-                    onAdd={onAdd}
-                    addLabel="Ghi nhận doanh thu"
-                    filters={{items: ['Salesman', 'Thời gian', 'Xoá bộ lọc']}}
-                />
-                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-white text-slate-900 font-bold border-b border-slate-200">
-                            <tr>
-                                <th className="py-4">Hoá đơn</th>
-                                <th className="py-4">Salesman</th>
-                                <th className="py-4">Doanh thu ghi nhận</th>
-                                <th className="py-4">% Hoá đơn</th>
-                                <th className="py-4">Ngày ghi nhận</th>
-                                <th className="py-4"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.map((r: RevenueAllocation) => {
-                                const invoice = invoices.find((i: Invoice) => i.id === r.invoice_id);
-                                const salesman = users.find((u: User) => u.id === r.sales_user_id);
+                
+                {/* Search & Download */}
+                <div className="flex justify-between items-center gap-4 mb-4">
+                    <div className="relative flex-1 max-w-xl">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm kiếm dự án hoặc khách hàng..." 
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black" 
+                            value={filters.search}
+                            onChange={(e) => handleFilterChange('search', e.target.value)}
+                        />
+                    </div>
+                    <button className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 flex items-center gap-2">
+                        <Download size={16} /> Tải xuống
+                    </button>
+                </div>
+                {filterError && <div className="text-red-500 text-xs mb-4">{filterError}</div>}
+
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-3 mb-6">
+                    <div className="p-2"><Filter size={20} className="text-slate-900" /></div>
+                    
+                    {/* Year */}
+                    <div className="relative">
+                        <select 
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            value={filters.year}
+                            onChange={(e) => handleFilterChange('year', Number(e.target.value))}
+                        >
+                            <option value={2023}>2023</option>
+                            <option value={2024}>2024</option>
+                            <option value={2025}>2025</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {/* Division */}
+                    <div className="relative">
+                        <select 
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            value={filters.division}
+                            onChange={(e) => handleFilterChange('division', e.target.value)}
+                        >
+                            <option value="All">Bộ phận</option>
+                            <option value="Division 1">Division 1</option>
+                            <option value="Division 2">Division 2</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {/* Status */}
+                    <div className="relative">
+                        <select 
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            value={filters.status}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
+                        >
+                            <option value="All">Trạng thái</option>
+                            <option value="Đã ký">Đã ký</option>
+                            <option value="Chờ ký">Chờ ký</option>
+                            <option value="Dự kiến">Dự kiến</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {/* Currency */}
+                    <div className="relative">
+                        <select 
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            value={filters.currency}
+                            onChange={(e) => handleFilterChange('currency', e.target.value)}
+                        >
+                            <option value="USD">Đơn vị tiền gốc: USD</option>
+                            <option value="JPY">Đơn vị tiền gốc: JPY</option>
+                            <option value="VND">Đơn vị tiền gốc: VND</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {(filters.division !== 'All' || filters.status !== 'All' || filters.year !== new Date().getFullYear()) && (
+                        <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                    )}
+                </div>
+
+                {/* Data Grid */}
+                <div className="flex-1 overflow-auto relative border border-slate-200 rounded-lg">
+                    {/* Sticky Header for Totals */}
+                    <div className="sticky top-0 z-20 bg-slate-200 font-bold text-xs text-slate-900 border-b border-slate-300 flex min-w-max">
+                        <div className="w-16 p-3 sticky left-0 bg-slate-200 z-30"></div> {/* Checkbox placeholder */}
+                        <div className="w-24 p-3 sticky left-16 bg-slate-200 z-30"></div> {/* Client Code placeholder */}
+                        <div className="w-40 p-3"></div> {/* Client Name */}
+                        <div className="w-40 p-3 text-right">Tổng doanh thu</div> 
+                        <div className="w-24 p-3"></div> {/* Division */}
+                        <div className="w-24 p-3"></div> {/* Status */}
+                        {totalMonthlyRevenue.map((val, idx) => (
+                            <div key={idx} className="w-32 p-3 text-right border-l border-slate-300">
+                                {val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {filters.currency}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Table Header */}
+                    <div className="bg-white font-bold text-xs text-slate-900 border-b border-slate-200 flex min-w-max">
+                        <div className="w-16 p-3 sticky left-0 bg-white z-10 border-r border-slate-100">
+                            <input type="checkbox" className="rounded border-slate-300" />
+                        </div>
+                        <div className="w-24 p-3 sticky left-16 bg-white z-10 border-r border-slate-100">Mã KH</div>
+                        <div className="w-40 p-3 border-r border-slate-100">Tên khách hàng</div>
+                        <div className="w-40 p-3 border-r border-slate-100">Dự án</div>
+                        <div className="w-24 p-3 border-r border-slate-100">Bộ phận</div>
+                        <div className="w-24 p-3 border-r border-slate-100">Trạng thái</div>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                            <div key={m} className="w-32 p-3 text-right border-r border-slate-100">Tháng {m}</div>
+                        ))}
+                    </div>
+
+                    {/* Table Body */}
+                    {tableRows.length === 0 ? (
+                        <div className="p-10 text-center text-slate-500">Không tìm thấy kết quả.</div>
+                    ) : (
+                        <div className="min-w-max">
+                            {tableRows.map((row, index) => {
+                                const status = row.contract?.status_id === 1 ? 'Chờ ký' : row.contract?.status_id === 2 ? 'Đã ký' : 'Dự kiến';
                                 return (
-                                    <tr key={r.id} className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer" onClick={() => onEdit(r)}>
-                                        <td className="py-4 font-medium">{invoice?.invoice_no}</td>
-                                        <td className="py-4 text-slate-600">{salesman?.full_name}</td>
-                                        <td className="py-4 font-medium">{r.revenue_amount.toLocaleString()}</td>
-                                        <td className="py-4 text-slate-600">{r.percent_of_invoice}%</td>
-                                        <td className="py-4 text-slate-600">{r.allocation_date}</td>
-                                        <td className="py-4 text-right">
-                                             <button className="px-3 py-1 border rounded hover:bg-slate-50 text-xs mr-2 text-red-600 border-red-200" onClick={(e) => { e.stopPropagation(); onDelete(r.id); }}>Xoá</button>
-                                        </td>
-                                    </tr>
-                                )
+                                    <div 
+                                        key={row.project.id} 
+                                        className="flex text-xs text-slate-700 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors group"
+                                        onClick={() => navigate('/projects')} // Item 16
+                                    >
+                                        <div className="w-16 p-3 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-100 flex items-center">
+                                            <input type="checkbox" onClick={e => e.stopPropagation()} className="rounded border-slate-300" />
+                                        </div>
+                                        <div className="w-24 p-3 sticky left-16 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-100 font-medium">
+                                            {row.client?.code}
+                                        </div>
+                                        <div className="w-40 p-3 border-r border-slate-100 truncate" title={row.client?.name}>
+                                            {row.client?.name}
+                                        </div>
+                                        <div className="w-40 p-3 border-r border-slate-100 truncate font-medium" title={row.project.name}>
+                                            {row.project.name}
+                                        </div>
+                                        <div className="w-24 p-3 border-r border-slate-100">
+                                            {row.project.division}
+                                        </div>
+                                        <div className="w-24 p-3 border-r border-slate-100">
+                                            {status}
+                                        </div>
+                                        {row.monthlyRevenues.map((val, idx) => (
+                                            <div key={idx} className="w-32 p-3 text-right border-r border-slate-100">
+                                                {formatMoney(val)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
                             })}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
