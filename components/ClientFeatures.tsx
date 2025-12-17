@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, PlusCircle, X, CheckSquare, Calendar as CalendarIcon, ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
+import { ArrowLeft, PlusCircle, X, CheckSquare, Calendar as CalendarIcon, ChevronDown, ChevronRight, Edit3, Filter } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Client, Project, Contract, Invoice, ChangeLog, User, MasterCategory, Permission } from '../types';
 import { StatusBadge, FormHeader, FilterBar } from './Shared';
 import { getMockData } from '../services/mockData';
 
-export const ClientForm = ({ initialData, onBack, onSave, masterData, users, clients, permissions }: { 
+export const ClientForm = ({ initialData, onBack, onSave, masterData, users, clients, permissions = [] }: { 
     initialData?: Client, 
     onBack: () => void, 
     onSave: (data: any) => void, 
@@ -455,7 +455,7 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
 
             {/* Filter Bar */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
-                <div className="p-2"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE4LjMzMzMgMi41SDEuNjY2NjdMMTguMzMzMyAyLjVaIiBzdHJva2U9IiMxNzE3MTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik04LjMzMzMzIDEwVjE1Ljg3NUw4LjMzMzMzIDEwWiIgc3Ryb2tlPSIjMTcxNzE3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNOS45OTk5OSAxMC44MzM0TDE4LjMzMzMgMi41SDkuOTk5OTlMMTguMzMzMyAyLjVaIiBmaWxsPSIjMTcxNzE3Ii8+CjxwYXRoIGQ9Ik0xLjc1IDIuNUgxOC4yNUw5Ljk5OTk5IDEwLjgzMzRWMTcuNUw4LjI0OTk5IDE1Ljg3NVYxMC44MzM0TDEuNzUgMi41WiIgc3Ryb2tlPSIjMTcxNzE3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K" alt="Filter" className="w-5 h-5" /></div>
+                <div className="p-2"><Filter size={20} className="text-slate-900" /></div>
                 
                 <div className="relative">
                     <select className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300" value={filters.type} onChange={e => handleFilterChange('type', e.target.value)}>
