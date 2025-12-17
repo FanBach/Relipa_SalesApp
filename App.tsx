@@ -14,6 +14,7 @@ import { AccountForm, AccountsModule, PermissionsModule, MasterModule, LogWorkfo
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   
   // State for data (initialized from mockData)
   const initialData = getMockData();
@@ -41,6 +42,17 @@ const App = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Handle Dark Mode
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => setDarkMode(!darkMode);
 
   // Reset edit state when route changes
   useEffect(() => {
@@ -219,11 +231,16 @@ const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex font-sans text-slate-900 dark:text-slate-100">
         <Sidebar isOpen={sidebarOpen} />
         
         <div className="flex-1 lg:ml-64 min-w-0 transition-all flex flex-col">
-            <Header setSidebarOpen={setSidebarOpen} unreadCount={notifications.filter(n => !n.is_read).length} />
+            <Header 
+                setSidebarOpen={setSidebarOpen} 
+                unreadCount={notifications.filter(n => !n.is_read).length} 
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+            />
             
             <main className="flex-1 p-8 overflow-y-auto">
                 {activeModule === 'clientForm' ? (

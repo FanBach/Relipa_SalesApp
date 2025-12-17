@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Briefcase, FileText, FileBarChart, PieChart, Calculator, User as UserIcon, Settings, LogOut, Menu, Search, Bell, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Users, Briefcase, FileText, FileBarChart, PieChart, Calculator, User as UserIcon, Settings, LogOut, Menu, Search, Bell, ArrowLeft, Sun, Moon } from 'lucide-react';
 
-export const Header = ({ setSidebarOpen, unreadCount }: any) => {
+export const Header = ({ setSidebarOpen, unreadCount, darkMode, toggleDarkMode }: any) => {
     return (
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 z-20 relative">
+        <header className="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 lg:px-8 z-20 relative transition-colors">
           <button 
-            className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+            className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu size={20} />
@@ -18,16 +18,24 @@ export const Header = ({ setSidebarOpen, unreadCount }: any) => {
               <input 
                 type="text" 
                 placeholder="Tìm kiếm..." 
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-slate-500 focus:bg-white dark:focus:bg-slate-800 transition-all dark:text-white dark:placeholder-slate-400"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <Link to="/notifications" className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+          <div className="flex items-center gap-4">
+            <button 
+                onClick={toggleDarkMode} 
+                className="p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+
+            <Link to="/notifications" className="relative p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-lg transition-colors">
               <Bell size={20} />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
               )}
             </Link>
           </div>
@@ -54,17 +62,17 @@ export const Sidebar = ({ isOpen }: { isOpen: boolean }) => {
   ]
 
   return (
-    <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-slate-50 border-r border-slate-200 transition-transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-16 flex items-center px-6 border-b border-slate-100">
+    <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">
+                <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
                     </svg>
                 </div>
                 <div>
-                    <h1 className="font-bold text-lg leading-none">Relipa</h1>
-                    <p className="text-[10px] text-slate-500">Sales Management</p>
+                    <h1 className="font-bold text-lg leading-none dark:text-white">Relipa</h1>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Sales Management</p>
                 </div>
             </div>
         </div>
@@ -78,8 +86,8 @@ export const Sidebar = ({ isOpen }: { isOpen: boolean }) => {
                         to={item.path}
                         className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                         location.pathname === item.path 
-                            ? 'bg-slate-200 text-slate-900' 
-                            : 'text-slate-600 hover:bg-slate-100'
+                            ? 'bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white' 
+                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
                         }`}
                     >
                         <item.icon size={18} strokeWidth={2} />
@@ -96,8 +104,8 @@ export const Sidebar = ({ isOpen }: { isOpen: boolean }) => {
                         to={item.path}
                         className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                         location.pathname === item.path 
-                            ? 'bg-slate-200 text-slate-900' 
-                            : 'text-slate-600 hover:bg-slate-100'
+                            ? 'bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white' 
+                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
                         }`}
                     >
                         <item.icon size={18} strokeWidth={2} />
@@ -107,14 +115,14 @@ export const Sidebar = ({ isOpen }: { isOpen: boolean }) => {
             </nav>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-slate-200 bg-slate-50">
+        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
              <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white font-bold">DT</div>
+                 <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-slate-700 flex items-center justify-center text-white font-bold">DT</div>
                  <div className="flex-1">
-                     <p className="font-bold text-sm text-slate-900">Duc</p>
-                     <p className="text-xs text-slate-500">Sale Manager</p>
+                     <p className="font-bold text-sm text-slate-900 dark:text-white">Duc</p>
+                     <p className="text-xs text-slate-500 dark:text-slate-400">Sale Manager</p>
                  </div>
-                 <LogOut size={18} className="text-slate-400 cursor-pointer hover:text-red-500" />
+                 <LogOut size={18} className="text-slate-400 cursor-pointer hover:text-red-500 dark:hover:text-red-400" />
              </div>
         </div>
     </div>
