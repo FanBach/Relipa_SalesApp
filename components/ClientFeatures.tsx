@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, PlusCircle, X, CheckSquare, Calendar as CalendarIcon, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, PlusCircle, X, CheckSquare, Calendar as CalendarIcon, ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Client, Project, Contract, Invoice, ChangeLog, User, MasterCategory, Permission } from '../types';
 import { StatusBadge, FormHeader, FilterBar } from './Shared';
@@ -393,8 +393,6 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
         setSearchError('');
     };
 
-    const hasFilters = filters.type !== 'all' || filters.salesman !== 'all' || filters.source !== 'all' || filters.startDate !== '' || filters.endDate !== '' || filters.search !== '';
-
     // Filter Logic
     const filteredData = data.filter((c: Client) => {
         if (filters.type !== 'all' && c.type !== filters.type) return false;
@@ -432,90 +430,120 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
         <div className="p-6">
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Quản lý khách hàng</h2>
-            <FilterBar 
-                placeholder="Tìm kiếm khách hàng ..." 
-                onAdd={onAdd} 
-                addLabel="Thêm khách hàng"
-                searchError={searchError}
-                filters={{
-                    items: [
-                    <select key="type" className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-600 focus:outline-none" value={filters.type} onChange={e => handleFilterChange('type', e.target.value)}>
+            
+            {/* Top Bar: Search + Count + Add */}
+            <div className="flex justify-between items-center gap-4 mb-4">
+                <div className="flex items-center gap-3 flex-1 max-w-2xl">
+                    <div className="relative w-full">
+                        <input 
+                            type="text" 
+                            placeholder="Tìm kiếm khách hàng ..." 
+                            className="w-full pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black" 
+                            value={filters.search} 
+                            onChange={(e) => handleFilterChange('search', e.target.value)} 
+                        />
+                    </div>
+                    <div className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-medium text-slate-600 whitespace-nowrap">
+                        {filteredData.length} khách hàng
+                    </div>
+                </div>
+                <button onClick={onAdd} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
+                    Thêm khách hàng
+                </button>
+            </div>
+            {searchError && <div className="text-red-500 text-xs mb-4">{searchError}</div>}
+
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+                <div className="p-2"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE4LjMzMzMgMi41SDEuNjY2NjdMMTguMzMzMyAyLjVaIiBzdHJva2U9IiMxNzE3MTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik04LjMzMzMzIDEwVjE1Ljg3NUw4LjMzMzMzIDEwWiIgc3Ryb2tlPSIjMTcxNzE3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNOS45OTk5OSAxMC44MzM0TDE4LjMzMzMgMi41SDkuOTk5OTlMMTguMzMzMyAyLjVaIiBmaWxsPSIjMTcxNzE3Ii8+CjxwYXRoIGQ9Ik0xLjc1IDIuNUgxOC4yNUw5Ljk5OTk5IDEwLjgzMzRWMTcuNUw4LjI0OTk5IDE1Ljg3NVYxMC44MzM0TDEuNzUgMi41WiIgc3Ryb2tlPSIjMTcxNzE3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K" alt="Filter" className="w-5 h-5" /></div>
+                
+                <div className="relative">
+                    <select className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300" value={filters.type} onChange={e => handleFilterChange('type', e.target.value)}>
                         <option value="all">Tất cả loại KH</option>
                         {masterData?.find((c: any) => c.id === 'client_type')?.items.map((it: string) => <option key={it} value={it}>{it}</option>)}
-                    </select>,
-                    <select key="sale" className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-600 focus:outline-none" value={filters.salesman} onChange={e => handleFilterChange('salesman', e.target.value)}>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+
+                <div className="relative">
+                    <select className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300" value={filters.salesman} onChange={e => handleFilterChange('salesman', e.target.value)}>
                         <option value="all">Tất cả salesman</option>
                         {users?.map((u: User) => <option key={u.id} value={u.full_name}>{u.full_name}</option>)}
-                    </select>,
-                    <select key="src" className="px-3 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-600 focus:outline-none" value={filters.source} onChange={e => handleFilterChange('source', e.target.value)}>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+
+                <div className="relative">
+                    <select className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300" value={filters.source} onChange={e => handleFilterChange('source', e.target.value)}>
                         <option value="all">Tất cả nguồn</option>
                          {masterData?.find((c: any) => c.id === 'lead_source')?.items.map((it: string) => <option key={it} value={it}>{it}</option>)}
-                    </select>,
-                    <div key="date" className="flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-1">
-                        <CalendarIcon size={12} className="text-slate-400"/>
-                        <input type="date" className="text-xs text-slate-600 focus:outline-none w-24" value={filters.startDate} onChange={e => handleFilterChange('startDate', e.target.value)} />
-                        <span className="text-slate-400">-</span>
-                        <input type="date" className="text-xs text-slate-600 focus:outline-none w-24" value={filters.endDate} onChange={e => handleFilterChange('endDate', e.target.value)} />
-                    </div>,
-                    hasFilters && <button key="clear" onClick={clearFilters} className="px-3 py-1.5 bg-slate-100 rounded text-xs text-slate-600 hover:bg-slate-200">Xoá bộ lọc</button>
-                    ],
-                    onSearch: (val: string) => handleFilterChange('search', val)
-                }}
-                extraButtons={[
-                    <div key="count" className="px-3 py-2 bg-slate-100 rounded-lg text-sm font-medium text-slate-600">
-                        {filteredData.length} khách hàng
-                    </div>,
-                    <button key="export" onClick={() => alert("Đang tải xuống danh sách khách hàng...")} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 flex items-center gap-2">
+                    </select>
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+
+                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded px-3 py-1.5 hover:border-slate-300">
+                    <span className="text-xs text-slate-400">Tất cả thời gian</span>
+                    <CalendarIcon size={14} className="text-slate-400"/>
+                    <input type="date" className="text-xs text-slate-600 focus:outline-none w-4 bg-transparent opacity-0 absolute w-24 cursor-pointer" onChange={e => handleFilterChange('startDate', e.target.value)} />
+                </div>
+
+                <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                
+                <div className="ml-auto">
+                    <button onClick={() => alert("Đang tải xuống danh sách khách hàng...")} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-600 hover:bg-slate-50 flex items-center gap-2">
                         Tải xuống
                     </button>
-                ]}
-            />
-            {/* EX004: No Results */}
+                </div>
+            </div>
+
+            {/* Table */}
             {filteredData.length === 0 ? (
                 <div className="text-center py-10 text-slate-500">Không tìm thấy kết quả.</div>
             ) : (
-            <table className="w-full text-left text-sm">
-                <thead className="bg-white text-slate-900 font-bold border-b border-slate-200">
-                    <tr>
-                        <th className="py-4">Mã KH</th>
-                        <th className="py-4">Tên khách hàng</th>
-                        <th className="py-4">Loại KH</th>
-                        <th className="py-4">Ngày ký đầu</th>
-                        <th className="py-4">Salesman</th>
-                        <th className="py-4">Nguồn lead</th>
-                        <th className="py-4">Địa chỉ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((c: Client) => {
-                        const salesmanName = users.find((u: User) => u.id === c.owner_sales_id)?.full_name || '-';
-                        return (
-                            <tr 
-                                key={c.id} 
-                                className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer"
-                                onClick={() => onViewDetail(c)}
-                            >
-                                <td className="py-4 text-slate-600">{c.code}</td>
-                                <td className="py-4 font-medium">{c.name}</td>
-                                <td className="py-4 text-slate-600">{c.type}</td>
-                                <td className="py-4 text-slate-600">{c.first_signed_date}</td>
-                                <td className="py-4 text-slate-600">{salesmanName}</td>
-                                <td className="py-4 text-slate-600">{c.lead_source}</td>
-                                <td className="py-4 text-slate-600 max-w-xs truncate">{c.address}</td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-white text-slate-900 font-bold border-b border-slate-200">
+                        <tr>
+                            <th className="py-4">Mã KH</th>
+                            <th className="py-4">Tên khách hàng</th>
+                            <th className="py-4">Loại KH</th>
+                            <th className="py-4">Ngày ký đầu</th>
+                            <th className="py-4">Salesman</th>
+                            <th className="py-4">Nguồn lead</th>
+                            <th className="py-4">Địa chỉ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredData.map((c: Client) => {
+                            const salesmanName = users.find((u: User) => u.id === c.owner_sales_id)?.full_name || '-';
+                            return (
+                                <tr 
+                                    key={c.id} 
+                                    className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer"
+                                    onClick={() => onViewDetail(c)}
+                                >
+                                    <td className="py-4 text-slate-600">{c.code}</td>
+                                    <td className="py-4 font-medium">{c.name}</td>
+                                    <td className="py-4 text-slate-600">{c.type}</td>
+                                    <td className="py-4 text-slate-600">{c.first_signed_date}</td>
+                                    <td className="py-4 text-slate-600">{salesmanName}</td>
+                                    <td className="py-4 text-slate-600">{c.lead_source}</td>
+                                    <td className="py-4 text-slate-600 max-w-xs truncate">{c.address}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
             )}
             
             <div className="flex justify-center mt-6 gap-2">
-                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 disabled:opacity-50" disabled><ChevronDown className="rotate-90" size={16}/></button>
-                <button className="w-8 h-8 flex items-center justify-center border rounded bg-black text-white">1</button>
-                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50">2</button>
-                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50">...</button>
-                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50">10</button>
-                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50"><ChevronRight size={16}/></button>
+                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 disabled:opacity-50" disabled><ChevronDown className="rotate-90" size={14}/></button>
+                <button className="w-8 h-8 flex items-center justify-center border rounded bg-black text-white text-xs">1</button>
+                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 text-xs">2</button>
+                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 text-xs">...</button>
+                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 text-xs">10</button>
+                <button className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 disabled:opacity-50"><ChevronRight size={14}/></button>
             </div>
         </div>
     </div>
@@ -563,50 +591,101 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
             <div className="p-8 max-w-7xl mx-auto space-y-6">
                 {/* Info & Financials Split */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Info Card */}
+                    {/* Client Info Card - Takes 2/3 width */}
                     <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <h3 className="font-bold text-slate-900 mb-4">Thông tin khách hàng</h3>
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                            <div><span className="text-slate-500 block mb-1">Người đại diện:</span> <span className="font-medium">{client.recipient_name || client.representative}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Lead source:</span> <span className="font-medium">{client.lead_source}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Ngày ký đầu:</span> <span className="font-medium">{client.first_signed_date}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Lead get:</span> <span className="font-medium">{leadGetName}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Địa chỉ:</span> <span className="font-medium">{client.address}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Salesman:</span> <span className="font-medium">{salesmanName}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Loại:</span> <span className="font-medium">{client.type}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Pháp nhân cũ:</span> <span className="font-medium">{client.origin_client_id || '-'}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Kênh trao đổi:</span> <span className="font-medium">{client.channel}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Mã số thuế:</span> <span className="font-medium">{client.tax_code || '-'}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Người thanh toán ({client.payer_count || 0}):</span> <span className="font-medium">{client.payer_name}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Ghi chú:</span> <span className="font-medium">{client.noted || '-'}</span></div>
-                            <div className="col-span-2">
-                                <span className="text-slate-500 mr-4">{client.payer_email}</span>
+                        <h3 className="font-bold text-slate-900 mb-6">Thông tin khách hàng</h3>
+                        <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
+                            <div className="space-y-4">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Người đại diện:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.recipient_name || client.representative}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Ngày ký đầu:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.first_signed_date}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Địa chỉ:</span>
+                                    <span className="font-medium text-slate-900 text-right max-w-[200px] truncate">{client.address}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Loại:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.type}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Kênh trao đổi:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.channel}</span>
+                                </div>
+                                <div>
+                                    <span className="text-slate-500 block mb-2">Người thanh toán ({client.payers?.length || (client.payer_name ? 1 : 0)}):</span>
+                                    <div className="space-y-2">
+                                        {client.payers && client.payers.length > 0 ? (
+                                            client.payers.map((p: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between text-xs">
+                                                    <span className="font-medium text-slate-900">{p.name}</span>
+                                                    <span className="text-slate-500">{p.email}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="flex justify-between text-xs">
+                                                <span className="font-medium text-slate-900">{client.payer_name}</span>
+                                                <span className="text-slate-500">{client.payer_email}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Lead source:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.lead_source}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Lead get:</span>
+                                    <span className="font-medium text-slate-900 text-right">{leadGetName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Salesman:</span>
+                                    <span className="font-medium text-slate-900 text-right">{salesmanName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Pháp nhân cũ:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.origin_client_id || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Mã số thuế:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.tax_code || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Ghi chú:</span>
+                                    <span className="font-medium text-slate-900 text-right">{client.noted || '-'}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Financial Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                         <h3 className="font-bold text-slate-900 mb-4">Tổng quan tài chính</h3>
+                    {/* Financial Card - Takes 1/3 width */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 h-full">
+                         <h3 className="font-bold text-slate-900 mb-6">Tổng quan tài chính</h3>
                          <div className="space-y-4">
-                            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100" onClick={() => onNavigate('contracts')}>
+                            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onNavigate('contracts')}>
                                 <div>
-                                    <div className="text-xs text-slate-500 mb-1">Tổng giá trị hợp đồng</div>
-                                    <div className="font-bold text-lg">{totalContractValue.toLocaleString()} US$</div>
+                                    <div className="text-xs text-slate-500 mb-1 font-medium">Tổng giá trị hợp đồng</div>
+                                    <div className="font-bold text-lg text-slate-900">{totalContractValue.toLocaleString()} US$</div>
                                 </div>
-                                <div className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">{clientContracts.length}</div>
+                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">{clientContracts.length}</div>
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100" onClick={() => onNavigate('contracts')}>
+                            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onNavigate('contracts')}>
                                 <div>
-                                    <div className="text-xs text-slate-500 mb-1">Doanh thu (NET)</div>
-                                    <div className="font-bold text-lg">{netRevenue.toLocaleString()} US$</div>
+                                    <div className="text-xs text-slate-500 mb-1 font-medium">Doanh thu (NET)</div>
+                                    <div className="font-bold text-lg text-slate-900">{netRevenue.toLocaleString()} US$</div>
                                 </div>
                                 <ChevronRight size={20} className="text-slate-400" />
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100" onClick={() => onNavigate('invoices')}>
+                            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onNavigate('invoices')}>
                                 <div>
-                                    <div className="text-xs text-slate-500 mb-1">Công nợ</div>
-                                    <div className="font-bold text-lg">{currentDebt.toLocaleString()} US$</div>
+                                    <div className="text-xs text-slate-500 mb-1 font-medium">Công nợ</div>
+                                    <div className="font-bold text-lg text-slate-900">{currentDebt.toLocaleString()} US$</div>
                                 </div>
                                 <ChevronRight size={20} className="text-slate-400" />
                             </div>
@@ -616,17 +695,17 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
 
                 {/* Tabs & Lists */}
                 <div>
-                     <div className="flex gap-4 mb-4 border-b border-slate-200">
-                         <button onClick={() => setActiveTab('projects')} className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'projects' ? 'border-black text-black' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                     <div className="bg-slate-100 p-1 rounded-lg inline-flex mb-6">
+                         <button onClick={() => setActiveTab('projects')} className={`py-2 px-6 text-sm font-medium rounded-md transition-all ${activeTab === 'projects' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                              Dự án ({clientProjects.length})
                          </button>
-                         <button onClick={() => setActiveTab('contracts')} className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'contracts' ? 'border-black text-black' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                         <button onClick={() => setActiveTab('contracts')} className={`py-2 px-6 text-sm font-medium rounded-md transition-all ${activeTab === 'contracts' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                              Hợp đồng ({clientContracts.length})
                          </button>
-                         <button onClick={() => setActiveTab('revenue')} className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'revenue' ? 'border-black text-black' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                         <button onClick={() => setActiveTab('revenue')} className={`py-2 px-6 text-sm font-medium rounded-md transition-all ${activeTab === 'revenue' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                              Doanh thu
                          </button>
-                         <button onClick={() => setActiveTab('history')} className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'history' ? 'border-black text-black' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                         <button onClick={() => setActiveTab('history')} className={`py-2 px-6 text-sm font-medium rounded-md transition-all ${activeTab === 'history' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                              Lịch sử thay đổi
                          </button>
                      </div>
@@ -635,29 +714,29 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                          {activeTab === 'projects' && (
                              <div className="space-y-4">
                                  {clientProjects.map((p: Project) => {
-                                     // Project revenue = sum(contracts value - fees) for this project
-                                     // Finding all contracts for this project
+                                     // Project revenue logic
                                      const pContracts = contracts.filter((c: Contract) => c.project_id === p.id);
-                                     const pRevenue = pContracts.reduce((sum: number, c: Contract) => {
-                                         return sum + (c.total_value - (c.commission_fee || 0) - (c.discount || 0) - (c.other_fee || 0));
-                                     }, 0);
+                                     const pRevenue = pContracts.reduce((sum: number, c: Contract) => sum + c.total_value, 0);
 
                                      return (
-                                     <div key={p.id} className="border border-slate-200 rounded-lg p-4 flex justify-between items-center hover:bg-slate-50">
-                                         <div>
-                                             <div className="flex items-center gap-2 mb-1">
-                                                 <span className="font-bold text-slate-900">{p.name}</span>
-                                                 <StatusBadge type="project" status={p.status_id} project={p} />
+                                     <div key={p.id} className="border border-slate-200 rounded-lg p-5 flex justify-between items-start hover:bg-slate-50 transition-colors">
+                                         <div className="flex-1">
+                                             <div className="flex items-center gap-3 mb-2">
+                                                 <span className="font-bold text-slate-900 text-lg">{p.name}</span>
+                                                 {/* Status Badge Custom */}
+                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${p.status_id === 2 ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'}`}>
+                                                     {p.status_id === 2 ? 'Đang triển khai' : 'Hoàn thành'}
+                                                 </span>
                                              </div>
-                                             <div className="text-xs text-slate-500 flex gap-4">
-                                                 <span>Mã: {p.code}</span>
-                                                 <span>Bộ phận: {p.div_id || p.division}</span>
-                                                 <span>Doanh thu: {pRevenue.toLocaleString()} {p.currency}</span>
+                                             <div className="grid grid-cols-2 gap-y-1 text-sm text-slate-600 max-w-lg">
+                                                 <div>Mã dự án: <span className="font-medium text-slate-900">{p.code}</span></div>
+                                                 <div>Bộ phận phát triển: <span className="font-medium text-slate-900">{p.div_id || p.division}</span></div>
+                                                 <div>Doanh thu: <span className="font-medium text-slate-900">{pRevenue.toLocaleString()} {p.currency}</span></div>
                                              </div>
                                          </div>
-                                         <div className="text-right text-xs text-slate-500">
-                                             <div>Start: {p.start_date}</div>
-                                             <div>End: {p.end_date}</div>
+                                         <div className="text-right text-sm text-slate-600 space-y-1">
+                                             <div>Ngày bắt đầu: <span className="font-medium text-slate-900">{p.start_date}</span></div>
+                                             <div>Ngày kết thúc: <span className="font-medium text-slate-900">{p.end_date}</span></div>
                                          </div>
                                      </div>
                                  )})}
@@ -667,23 +746,30 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
 
                          {activeTab === 'contracts' && (
                              <div className="space-y-4">
-                                 {clientContracts.map((c: Contract) => (
-                                     <div key={c.id} className="border border-slate-200 rounded-lg p-4 flex justify-between items-center hover:bg-slate-50">
-                                         <div>
-                                             <div className="flex items-center gap-2 mb-1">
-                                                 <span className="font-bold text-slate-900">{c.code}</span>
-                                                 <StatusBadge type="contract" status={c.status_id} contract={c} />
+                                 {clientContracts.map((c: Contract) => {
+                                     // Validity check for badge
+                                     const isExpiringSoon = false; // Mock logic
+                                     return (
+                                     <div key={c.id} className="border border-slate-200 rounded-lg p-5 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                                         <div className="flex-1">
+                                             <div className="flex items-center gap-3 mb-2">
+                                                 <span className="font-bold text-slate-900 text-lg">{c.code}</span>
+                                                 <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-medium">
+                                                     {c.status_id === 1 ? 'Chờ ký' : c.status_id === 2 ? 'Đã ký' : 'Hết hạn sau 3 ngày'}
+                                                 </span>
+                                                 <span className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
                                              </div>
-                                             <div className="text-xs text-slate-500 flex gap-4">
-                                                 <span>Ngày ký: {c.sign_date || '-'}</span>
-                                                 <span>Giá trị: {c.total_value.toLocaleString()} {c.currency}</span>
+                                             <div className="grid grid-cols-2 gap-y-1 text-sm text-slate-600 max-w-lg">
+                                                 <div>Ngày ký kết: <span className="font-medium text-slate-900">{c.sign_date || '-'}</span></div>
+                                                 <div>Giá trị hợp đồng: <span className="font-medium text-slate-900">{c.total_value.toLocaleString()} {c.currency}</span></div>
                                              </div>
                                          </div>
-                                         <div className="text-right text-xs text-slate-500">
-                                             <div>Hiệu lực: {c.start_date} - {c.end_date}</div>
+                                         <div className="text-right text-sm text-slate-600 space-y-1">
+                                             <div>Ngày bắt đầu: <span className="font-medium text-slate-900">{c.start_date}</span></div>
+                                             <div>Ngày kết thúc: <span className="font-medium text-slate-900">{c.end_date}</span></div>
                                          </div>
                                      </div>
-                                 ))}
+                                 )})}
                                  {clientContracts.length === 0 && <p className="text-center text-slate-400 py-10">Chưa có hợp đồng nào.</p>}
                              </div>
                          )}
@@ -692,29 +778,28 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                              <div className="h-80">
                                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                     <BarChart data={[
-                                        { name: '1/2024', uv: 4000 },
-                                        { name: '2/2024', uv: 3000 },
-                                        { name: '3/2024', uv: 2000 },
-                                        { name: '4/2024', uv: 2780 },
-                                        { name: '5/2024', uv: 1890 },
+                                        { name: '1/2024', uv: 0 },
+                                        { name: '2/2024', uv: 0 },
+                                        { name: '3/2024', uv: 400000 },
+                                        { name: '4/2024', uv: 0 },
+                                        { name: '5/2024', uv: 500000 },
                                     ]}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                         <YAxis fontSize={12} tickLine={false} axisLine={false} />
                                         <RechartsTooltip 
                                             cursor={{fill: 'transparent'}} 
-                                            formatter={(value: any) => [`${value} US$`, 'Doanh thu']}
-                                            labelFormatter={(label) => `Tháng ${label}`}
+                                            formatter={(value: any) => [`${value.toLocaleString()} US$`, 'Doanh thu']}
                                         />
-                                        <Bar dataKey="uv" fill="#e2e8f0" activeBar={{ fill: '#64748b' }} barSize={40} />
+                                        <Bar dataKey="uv" fill="#e2e8f0" activeBar={{ fill: '#64748b' }} barSize={40} radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                              </div>
                          )}
 
                          {activeTab === 'history' && (
-                             <div className="space-y-6">
-                                {changeLogs.length > 0 && changeLogs.map((log: ChangeLog) => (
+                             <div className="space-y-6 max-w-3xl">
+                                {changeLogs.length > 0 ? changeLogs.map((log: ChangeLog) => (
                                     <div key={log.id} className="flex gap-4">
                                         <div className="flex flex-col items-center">
                                             <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">{log.id}</div>
@@ -727,25 +812,43 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div className="font-bold text-sm mb-2">Thay đổi thông tin: {log.column_name}</div>
-                                                    <div className="text-xs text-slate-500 mb-2">Trước thay đổi: {log.old_value}</div>
+                                                    <div className="font-bold text-sm mb-2 flex items-center gap-2">
+                                                        Thay đổi thông tin: {log.column_name} <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 mb-1">Trước thay đổi: {log.old_value}</div>
                                                     <div className="text-xs text-slate-500 mb-2">Sau thay đổi: {log.new_value}</div>
                                                     <div className="text-[10px] text-slate-400">Bởi: {log.changed_by} vào lúc {log.changed_at}</div>
                                                 </>
                                             )}
                                         </div>
                                     </div>
-                                ))}
-                                {/* Always show creation log if not in logs */}
-                                <div className="flex gap-4">
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">0</div>
-                                    </div>
-                                    <div className="border border-slate-200 rounded-lg p-4 flex-1">
-                                        <div className="font-bold text-sm mb-2">Tạo mới</div>
-                                        <div className="text-[10px] text-slate-400">Bởi: {client.created_by || 'Admin'} vào lúc {client.created_at || '-'}</div>
-                                    </div>
-                                </div>
+                                )) : (
+                                    /* Mock History Item */
+                                    <>
+                                        <div className="flex gap-4">
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">2</div>
+                                            </div>
+                                            <div className="border border-slate-200 rounded-lg p-4 flex-1">
+                                                <div className="font-bold text-sm mb-2 flex items-center gap-2">
+                                                    Thay đổi thông tin: Địa chỉ <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                                </div>
+                                                <div className="text-xs text-slate-500 mb-1">Trước thay đổi: -</div>
+                                                <div className="text-xs text-slate-500 mb-2">Sau thay đổi: </div>
+                                                <div className="text-[10px] text-slate-400">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">1</div>
+                                            </div>
+                                            <div className="border border-slate-200 rounded-lg p-4 flex-1">
+                                                <div className="font-bold text-sm mb-1">Tạo mới</div>
+                                                <div className="text-[10px] text-slate-400">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                              </div>
                          )}
                      </div>
