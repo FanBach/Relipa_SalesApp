@@ -38,8 +38,18 @@ const PROJECTS: Project[] = [
 ];
 
 const CONTRACTS: Contract[] = [
-  { id: 1, code: "MBA-C-001", project_id: 1, client_id: 1, name: "Hợp đồng Mobile Banking", status_id: 2, start_date: "18/05/2025", end_date: "18/05/2026", total_value: 500000, net_revenue: 450000, currency: "USD", type: "ODC", progress: 50, sign_date: "15/05/2025", accepted_date: "15/05/2025", commission_fee: 10000, discount: 5000, other_fee: 0, is_transfer_debt: true, is_periodic_invoice: true },
-  { id: 2, code: "MBA-C-002", project_id: 1, client_id: 1, name: "Hợp đồng Maintenance", status_id: 1, start_date: "19/05/2026", end_date: "19/05/2027", total_value: 120000, net_revenue: 120000, currency: "USD", type: "Project base", progress: 0, sign_date: "", accepted_date: "", commission_fee: 0, discount: 0, other_fee: 0 },
+  { 
+    id: 1, code: "MBA-C-001", project_id: 1, client_id: 1, name: "Hợp đồng Mobile Banking", status_id: 2, start_date: "18/05/2025", end_date: "18/05/2026", total_value: 500000, net_revenue: 450000, currency: "USD", type: "ODC", progress: 50, sign_date: "15/05/2025", accepted_date: "15/05/2025", commission_fee: 10000, discount: 5000, other_fee: 0, is_transfer_debt: true, is_periodic_invoice: true,
+    allocations: Array.from({length: 12}, (_, i) => ({ month: `${i+1}/2025`, amount: 40000, man_month: 5 }))
+  },
+  { 
+    id: 2, code: "MBA-C-002", project_id: 1, client_id: 1, name: "Hợp đồng Maintenance", status_id: 1, start_date: "19/05/2026", end_date: "19/05/2027", total_value: 120000, net_revenue: 120000, currency: "USD", type: "Project base", progress: 0, sign_date: "", accepted_date: "", commission_fee: 0, discount: 0, other_fee: 0,
+    allocations: Array.from({length: 12}, (_, i) => ({ month: `${i+1}/2025`, amount: 10000, man_month: 2 }))
+  },
+  { 
+    id: 3, code: "MBA-C-003", project_id: 1, client_id: 1, name: "Hợp đồng Phase 2", status_id: 3, start_date: "01/01/2025", end_date: "31/12/2025", total_value: 1000000, net_revenue: 1000000, currency: "USD", type: "ODC", progress: 0, sign_date: "", accepted_date: "", commission_fee: 0, discount: 0, other_fee: 0,
+    allocations: Array.from({length: 12}, (_, i) => ({ month: `${i+1}/2025`, amount: 80000, man_month: 10 }))
+  },
 ];
 
 const INVOICES: Invoice[] = [

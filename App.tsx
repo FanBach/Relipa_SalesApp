@@ -274,7 +274,10 @@ const App = () => {
                         onSave={handleSaveAccount} 
                     />
                 ) : activeModule === 'logWorkforce' ? (
-                    <LogWorkforceForm onBack={() => setActiveModule('')} />
+                    <LogWorkforceForm 
+                        onBack={() => setActiveModule('')} 
+                        divisions={Array.from(new Set(projects.map(p => p.division).filter(Boolean)))}
+                    />
                 ) : (
                     <Routes>
                         <Route path="/" element={<Dashboard invoices={invoices} projects={projects} contracts={contracts} />} />

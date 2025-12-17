@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, PlusCircle, CheckSquare, Square, MinusCircle } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { User, Permission, MasterCategory, Project, Client, MonthlyData, Notification } from '../types';
+import { Trash2, PlusCircle, CheckSquare, Square, MinusCircle, Search, Filter, ChevronDown, Calendar as CalendarIcon, Download, RotateCcw } from 'lucide-react';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { User, Permission, MasterCategory, Project, Client, MonthlyData, Notification, Contract } from '../types';
 import { StatusBadge, FormHeader, FilterBar } from './Shared';
+import { getMockData } from '../services/mockData';
+import { useNavigate } from 'react-router-dom';
 
 export const AccountForm = ({ initialData, onBack, onSave }: any) => {
     const [formData, setFormData] = useState<Partial<User>>(initialData || {
@@ -243,124 +245,424 @@ export const MasterModule = ({ data }: any) => {
     );
 };
 
-export const LogWorkforceForm = ({ onBack }: any) => (
-    <div className="bg-white p-8 rounded-xl min-h-screen flex gap-8">
-        <div className="flex-1">
-             <FormHeader title="Log công số thực tế" onBack={onBack} onSave={onBack} />
-             <div className="grid grid-cols-2 gap-6 mb-8 max-w-xl">
-                 <div className="space-y-1">
-                     <label className="text-sm font-medium">Bộ phận</label>
-                     <select className="w-full p-2 border rounded-lg text-sm"><option>Division 1</option></select>
-                 </div>
-                 <div className="space-y-1">
-                     <label className="text-sm font-medium">Năm</label>
-                     <select className="w-full p-2 border rounded-lg text-sm"><option>2025</option></select>
-                 </div>
-             </div>
-             <div className="grid grid-cols-2 gap-4 max-w-2xl">
-                 {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
-                     <div key={m} className="space-y-1">
-                        <label className="text-sm text-slate-600">Man-month tháng {m} *</label>
-                        <input type="number" className="w-full p-2 border rounded-lg text-sm" placeholder="0" />
-                     </div>
-                 ))}
-             </div>
-        </div>
-        <div className="w-80 border rounded-xl p-4 bg-slate-50">
-            <h3 className="font-bold mb-4">Lịch sử thay đổi</h3>
-            <div className="space-y-4">
-                <div className="bg-white p-3 rounded border shadow-sm text-sm">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-slate-800">Tạo mới</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</p>
-                </div>
-            </div>
-        </div>
-    </div>
-);
+export const LogWorkforceForm = ({ onBack, divisions = [], onSave }: any) => {
+    const currentYear = new Date().getFullYear();
+    const [formData, setFormData] = useState({
+        division: '',
+        year: currentYear,
+        months: Array.from({length: 12}, () => '0')
+    });
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) => {
-    // Sample chart data
-    const chartData = [
-        { name: 'Jan', plan: 10, actual: 8 },
-        { name: 'Feb', plan: 12, actual: 11 },
-        { name: 'Mar', plan: 15, actual: 16 },
-        { name: 'Apr', plan: 10, actual: 10 },
-        { name: 'May', plan: 8, actual: 8 },
-        { name: 'Jun', plan: 10, actual: 9 },
-    ];
+    const handleMonthChange = (index: number, value: string) => {
+        const newMonths = [...formData.months];
+        newMonths[index] = value;
+        setFormData(prev => ({...prev, months: newMonths}));
+        
+        // Clear specific month error
+        const key = `month_${index}`;
+        if (errors[key]) {
+             setErrors(prev => {
+                 const newErrors = {...prev};
+                 delete newErrors[key];
+                 return newErrors;
+             });
+        }
+    };
 
-    const getMonthlyValue = (projectId: number, month: number, type: 'plan' | 'actual') => {
-        return monthlyData.find((d: MonthlyData) => d.projectId === projectId && d.month === month && d.type === type)?.value || '-';
+    const handleChange = (field: string, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+             setErrors(prev => {
+                 const newErrors = {...prev};
+                 delete newErrors[field];
+                 return newErrors;
+             });
+        }
+    };
+
+    const validate = () => {
+        const newErrors: Record<string, string> = {};
+        
+        // EX001
+        if (!formData.division) newErrors.division = "ERROR_DEPARTMENT_REQUIRED";
+        
+        // EX002, EX003, EX004
+        if (!formData.year) newErrors.year = "ERROR_YEAR_REQUIRED";
+        else if (formData.year < 1900) newErrors.year = "ERROR_YEAR_INVALID";
+        else if (formData.year > currentYear + 1) newErrors.year = "ERROR_YEAR_OUT_OF_RANGE";
+
+        // EX005, EX006, EX007
+        formData.months.forEach((m, idx) => {
+            if (m === '') {
+                newErrors[`month_${idx}`] = "ERROR_MANMONTH_REQUIRED";
+            } else {
+                const val = parseFloat(m);
+                if (isNaN(val)) {
+                    newErrors[`month_${idx}`] = "ERROR_MANMONTH_INVALID_FORMAT";
+                } else if (val < 0) {
+                    newErrors[`month_${idx}`] = "ERROR_MANMONTH_NEGATIVE";
+                }
+            }
+        });
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSaveClick = () => {
+        if (validate()) {
+            if (onSave) onSave(formData);
+            else onBack(); 
+        }
     };
 
     return (
-         <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
+        <div className="bg-white p-8 rounded-xl min-h-screen flex gap-8">
+            <div className="flex-1">
+                 <FormHeader title="Log công số thực tế" onBack={onBack} onSave={handleSaveClick} />
+                 
+                 <div className="grid grid-cols-2 gap-6 mb-8 max-w-xl">
+                     <div className="space-y-1">
+                         <label className="text-sm font-medium text-slate-900">Bộ phận</label>
+                         <select 
+                            className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 ${errors.division ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                            value={formData.division}
+                            onChange={(e) => handleChange('division', e.target.value)}
+                         >
+                            <option value="">Chọn bộ phận</option>
+                            {divisions.map((d: string) => <option key={d} value={d}>{d}</option>)}
+                         </select>
+                         {errors.division && <p className="text-xs text-red-500">{errors.division}</p>}
+                     </div>
+                     <div className="space-y-1">
+                         <label className="text-sm font-medium text-slate-900">Năm</label>
+                         <select 
+                            className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 ${errors.year ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                            value={formData.year}
+                            onChange={(e) => handleChange('year', Number(e.target.value))}
+                         >
+                            <option value={currentYear}>{currentYear}</option>
+                            <option value={currentYear + 1}>{currentYear + 1}</option>
+                            <option value={currentYear - 1}>{currentYear - 1}</option>
+                         </select>
+                         {errors.year && <p className="text-xs text-red-500">{errors.year}</p>}
+                     </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-x-12 gap-y-6 max-w-3xl">
+                     {formData.months.map((val, idx) => (
+                         <div key={idx} className="space-y-1">
+                            <label className="text-sm font-medium text-slate-900">Man-month tháng {idx + 1} *</label>
+                            <input 
+                                type="number" 
+                                step="0.01"
+                                className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 ${errors[`month_${idx}`] ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                                placeholder="Man-month" 
+                                value={val}
+                                onChange={(e) => handleMonthChange(idx, e.target.value)}
+                            />
+                            {errors[`month_${idx}`] && <p className="text-xs text-red-500">{errors[`month_${idx}`]}</p>}
+                         </div>
+                     ))}
+                 </div>
+            </div>
+
+            {/* History Section */}
+            <div className="w-96 border border-slate-200 rounded-xl p-6 bg-white shadow-sm h-fit">
+                <h3 className="font-bold text-slate-900 mb-6">Lịch sử thay đổi</h3>
+                <div className="space-y-6 relative">
+                    <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-slate-100"></div>
+                    
+                    {/* Item 1 */}
+                    <div className="relative pl-8">
+                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold z-10 border-4 border-white">2</div>
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <div className="font-bold text-sm text-slate-900 mb-2 flex items-center gap-2">
+                                Thay đổi thông tin: Địa chỉ 
+                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                            </div>
+                            <div className="space-y-1 text-xs">
+                                <div className="text-slate-500">Trước thay đổi: -</div>
+                                <div className="text-slate-500">Sau thay đổi: 10</div>
+                                <div className="text-slate-400 pt-2 border-t border-slate-200 mt-2">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Item 2 */}
+                    <div className="relative pl-8">
+                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold z-10 border-4 border-white">1</div>
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <div className="font-bold text-sm text-slate-900 mb-2">Tạo mới</div>
+                            <div className="text-xs text-slate-400 pt-1">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) => {
+    // Access mock data for contracts and permissions
+    const mockData = getMockData();
+    const contracts = mockData.contracts;
+    const permissions = mockData.permissions;
+    const navigate = useNavigate();
+
+    // Permission Check (EX001)
+    const canView = permissions?.find((p: Permission) => p.module === 'Doanh thu' && p.role === 'Sale Admin')?.canView ?? true; // Using 'Doanh thu' permission for now or 'Công số' if added
+
+    // --- State ---
+    const [filters, setFilters] = useState({
+        search: '',
+        year: new Date().getFullYear(),
+        division: 'All',
+        status: 'All'
+    });
+    const [searchError, setSearchError] = useState('');
+    const [systemError, setSystemError] = useState(false);
+
+    if (!canView) {
+        return <div className="p-6 text-red-600 font-medium">Tài khoản chưa được cấp quyền.</div>;
+    }
+    if (systemError) {
+        return <div className="p-6 text-red-600 font-medium">Có lỗi xảy ra, vui lòng thử lại sau.</div>;
+    }
+
+    // --- Logic ---
+    const handleFilterChange = (key: string, value: any) => {
+        if (key === 'search') {
+            if (value.length > 255) {
+                setSearchError('Điều kiện lọc không hợp lệ.');
+            } else {
+                setSearchError('');
+            }
+        }
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            search: '',
+            year: new Date().getFullYear(),
+            division: 'All',
+            status: 'All'
+        });
+        setSearchError('');
+    };
+
+    // Filter Logic
+    const filteredItems = contracts.map(c => {
+        const project = projects.find((p: Project) => p.id === c.project_id);
+        const client = clients.find((cl: Client) => cl.id === c.client_id);
+        return {
+            contract: c,
+            project,
+            client
+        };
+    }).filter(item => {
+        // Year filter (based on allocations or contract period?) - Assuming display for selected year
+        // Division
+        if (filters.division !== 'All' && item.project?.division !== filters.division) return false;
+        // Status (Contract status)
+        if (filters.status !== 'All') {
+            const statusMap: Record<number, string> = { 1: 'Chờ ký', 2: 'Đã ký', 3: 'Dự kiến' };
+            if (statusMap[item.contract.status_id] !== filters.status) return false;
+        }
+        // Search
+        if (filters.search) {
+            const term = filters.search.toLowerCase();
+            if (!item.project?.name.toLowerCase().includes(term) && !item.client?.name.toLowerCase().includes(term)) return false;
+        }
+        return true;
+    });
+
+    // Chart Data Aggregation
+    const chartData = Array.from({length: 12}, (_, i) => {
+        const month = i + 1;
+        // Sold MM (MM đã bán) -> Sum of allocations from filtered contracts
+        const soldMM = filteredItems.reduce((sum, item) => {
+            // Check allocations for this year and month
+            // Assuming allocation format "M/YYYY"
+            const alloc = item.contract.allocations?.find(a => {
+                const [mStr, yStr] = a.month.split('/');
+                return Number(mStr) === month && Number(yStr) === filters.year;
+            });
+            return sum + (alloc?.man_month || 0);
+        }, 0);
+
+        // Actual MM (MM thực tế) -> Sum from monthlyData (Project Logs)
+        // We aggregate projects involved in filteredItems
+        const relevantProjectIds = new Set(filteredItems.map(i => i.project?.id).filter(Boolean));
+        const actualMM = monthlyData
+            .filter((d: MonthlyData) => relevantProjectIds.has(d.projectId) && d.month === month && d.type === 'actual')
+            .reduce((sum: number, d: MonthlyData) => sum + d.value, 0);
+
+        return {
+            name: `Tháng ${month}`,
+            shortName: `${month}/${filters.year}`,
+            sold: soldMM,
+            actual: actualMM
+        };
+    });
+
+    // Get available divisions for LogWorkforceForm
+    const divOptions = Array.from(new Set(projects.map((p: Project) => p.division).filter(Boolean)));
+
+    return (
+         <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh] flex flex-col">
             <div className="p-6">
                 <h2 className="text-2xl font-bold text-slate-900 mb-6">Quản lý công số</h2>
-                <FilterBar 
-                    placeholder="Tìm kiếm dự án hoặc khách hàng..." 
-                    onAdd={() => {}}
-                    addLabel=""
-                    filters={{items: ['Năm', 'Bộ phận', 'Trạng thái', 'Xoá bộ lọc']}}
-                    extraButtons={
+                
+                {/* Header Actions */}
+                <div className="flex justify-between items-center gap-4 mb-4">
+                    <div className="relative flex-1 max-w-xl">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm kiếm dự án hoặc khách hàng" 
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            value={filters.search}
+                            onChange={(e) => handleFilterChange('search', e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <button className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 flex items-center gap-2">
+                            <Download size={16} /> Tải xuống
+                        </button>
                         <button onClick={onLog} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800">
                             Log công số
                         </button>
-                    }
-                />
+                    </div>
+                </div>
+                {searchError && <div className="text-red-500 text-xs mb-4">{searchError}</div>}
 
-                <div className="h-64 border rounded-xl p-4 mb-6 bg-slate-50 relative">
-                    <p className="font-bold text-sm mb-2">Công số tháng</p>
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-3 mb-6">
+                    <div className="p-2"><Filter size={20} className="text-slate-900" /></div>
+                    
+                    <div className="relative">
+                        <select 
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            value={filters.year}
+                            onChange={(e) => handleFilterChange('year', Number(e.target.value))}
+                        >
+                            <option value={2024}>2024</option>
+                            <option value={2025}>2025</option>
+                            <option value={2026}>2026</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    <div className="relative">
+                        <select 
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            value={filters.division}
+                            onChange={(e) => handleFilterChange('division', e.target.value)}
+                        >
+                            <option value="All">Bộ phận</option>
+                            <option value="Division 1">Division 1</option>
+                            <option value="Division 2">Division 2</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    <div className="relative">
+                        <select 
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            value={filters.status}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
+                        >
+                            <option value="All">Trạng thái</option>
+                            <option value="Đã ký">Đã ký</option>
+                            <option value="Chờ ký">Chờ ký</option>
+                            <option value="Dự kiến">Dự kiến</option>
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {(filters.division !== 'All' || filters.status !== 'All' || filters.year !== new Date().getFullYear()) && (
+                        <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                    )}
+                </div>
+
+                {/* Chart Section */}
+                <div className="h-72 border border-slate-200 rounded-xl p-4 mb-8 bg-white relative">
+                    <p className="font-bold text-sm mb-4 text-slate-900">Công số tháng</p>
                     <ResponsiveContainer width="100%" height="90%" minWidth={0}>
-                         <AreaChart data={chartData}>
+                            <ComposedChart data={chartData} margin={{top: 10, right: 30, left: 0, bottom: 0}}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                            <RechartsTooltip />
-                            <Area type="monotone" dataKey="actual" stroke="#8884d8" fill="#8884d8" fillOpacity={0.1} />
-                            <Area type="monotone" dataKey="plan" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.1} />
-                        </AreaChart>
+                            <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis fontSize={10} tickLine={false} axisLine={false} />
+                            <RechartsTooltip 
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                labelFormatter={(label, payload) => {
+                                    if (payload && payload.length > 0) return payload[0].payload.shortName;
+                                    return label;
+                                }}
+                                formatter={(value, name) => [value, name === 'sold' ? 'MM đã bán' : 'MM thực tế']}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                            <Bar dataKey="sold" name="MM đã bán" fill="#e2e8f0" barSize={40} radius={[4, 4, 0, 0]} />
+                            <Line type="monotone" dataKey="actual" name="MM thực tế" stroke="#1e293b" strokeWidth={2} dot={{r: 3, fill: '#1e293b'}} />
+                        </ComposedChart>
                     </ResponsiveContainer>
                 </div>
 
+                {/* Table Section */}
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs whitespace-nowrap">
-                        <thead className="bg-white text-slate-900 font-bold border-b border-slate-200">
-                            <tr>
-                                <th className="py-4 px-2">Mã KH</th>
-                                <th className="py-4 px-2">Tên khách hàng</th>
-                                <th className="py-4 px-2">Dự án</th>
-                                <th className="py-4 px-2">Bộ phận</th>
-                                <th className="py-4 px-2">Trạng thái</th>
-                                <th className="py-4 px-2">Loại</th>
-                                {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <th key={m} className="py-4 px-2">Tháng {m}</th>)}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {projects.map((p: Project) => {
-                                const clientName = clients.find((c: Client) => c.id === p.client_id)?.name;
-                                return (
-                                    <React.Fragment key={p.id}>
-                                        <tr className="border-b border-slate-50 hover:bg-slate-50">
-                                            <td className="py-3 px-2 text-slate-600" rowSpan={2}>FPT-001</td>
-                                            <td className="py-3 px-2 font-medium" rowSpan={2}>{clientName}</td>
-                                            <td className="py-3 px-2 text-slate-600" rowSpan={2}>{p.name}</td>
-                                            <td className="py-3 px-2 text-slate-600" rowSpan={2}>{p.division}</td>
-                                            <td className="py-3 px-2" rowSpan={2}><StatusBadge type="generic" status="Đã ký" /></td>
-                                            <td className="py-3 px-2 font-medium text-slate-500">Plan</td>
-                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={m} className="py-3 px-2 text-center text-slate-600">{getMonthlyValue(p.id, m, 'plan')}</td>)}
+                    {filteredItems.length === 0 ? (
+                        <div className="text-center py-10 text-slate-500">Không tìm thấy kết quả.</div>
+                    ) : (
+                        <table className="w-full text-left text-xs whitespace-nowrap">
+                            <thead className="bg-white text-slate-900 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th className="py-4 px-2 sticky left-0 bg-white z-10">Mã KH</th>
+                                    <th className="py-4 px-2">Tên khách hàng</th>
+                                    <th className="py-4 px-2">Dự án</th>
+                                    <th className="py-4 px-2">Bộ phận</th>
+                                    <th className="py-4 px-2">Trạng thái</th>
+                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <th key={m} className="py-4 px-2 text-center">Tháng {m}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredItems.map(({ contract, project, client }, idx) => {
+                                    // Get Monthly Values from Contract Allocations
+                                    const monthlyValues = Array.from({length: 12}, (_, i) => {
+                                        const m = i + 1;
+                                        const alloc = contract.allocations?.find(a => {
+                                            const [mStr, yStr] = a.month.split('/');
+                                            return Number(mStr) === m && Number(yStr) === filters.year;
+                                        });
+                                        return alloc ? alloc.man_month : 0;
+                                    });
+
+                                    return (
+                                        <tr 
+                                            key={contract.id} 
+                                            className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer group transition-colors"
+                                            onClick={() => navigate('/contracts')} // EX: Navigate to detail
+                                        >
+                                            <td className="py-3 px-2 text-slate-600 font-medium sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10">{client?.code}</td>
+                                            <td className="py-3 px-2 font-medium text-slate-900">{client?.name}</td>
+                                            <td className="py-3 px-2 text-slate-600">{project?.name}</td>
+                                            <td className="py-3 px-2 text-slate-600">{project?.division}</td>
+                                            <td className="py-3 px-2">
+                                                <StatusBadge type="contract" status={contract.status_id} />
+                                            </td>
+                                            {monthlyValues.map((val, i) => (
+                                                <td key={i} className="py-3 px-2 text-center text-slate-600">
+                                                    {val > 0 ? val : ''}
+                                                </td>
+                                            ))}
                                         </tr>
-                                        <tr className="border-b border-slate-100 hover:bg-slate-50 bg-slate-50/50">
-                                            <td className="py-3 px-2 font-medium text-indigo-600">Actual</td>
-                                             {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={m} className="py-3 px-2 text-center font-medium text-slate-800">{getMonthlyValue(p.id, m, 'actual')}</td>)}
-                                        </tr>
-                                    </React.Fragment>
-                                )
-                            })}
-                        </tbody>
-                    </table>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         </div>
