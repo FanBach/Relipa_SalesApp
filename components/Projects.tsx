@@ -1,264 +1,482 @@
 
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Search, Filter, Calendar as CalendarIcon, ChevronDown, ChevronRight } from 'lucide-react';
-import { Project, Client, Contract } from '../types';
-import { StatusBadge, FormHeader, FilterBar } from './Shared';
+import React, { useState, useMemo } from 'react';
+import { ArrowLeft, Search, Filter, Calendar as CalendarIcon, ChevronDown, ChevronRight, Download, X, Plus } from 'lucide-react';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { Project, Client, Contract, Invoice, ChangeLog, MonthlyData } from '../types';
+import { StatusBadge, FormHeader } from './Shared';
 import { getMockData } from '../services/mockData';
 
+// --- TRANG THÊM/SỬA DỰ ÁN (S004 - Add new & Edit) ---
 export const ProjectForm = ({ initialData, clients, onBack, onSave }: any) => {
     const [formData, setFormData] = useState<Partial<Project>>(initialData || {
-        code: `PRJ-${Math.floor(Math.random() * 1000)}`,
+        code: '',
         name: '',
-        client_id: clients[0]?.id,
-        technology: 'Web',
-        division: 'Division 1',
+        client_id: undefined,
+        technology: '',
+        division: '',
         start_date: '',
         end_date: '',
-        status_id: 2,
-        description: ''
+        description: '',
+        man_month: 0,
+        expected_revenue: 0,
+        currency: 'USD'
     });
 
     const handleChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const handleAutoCode = () => {
+        const randomCode = `PRJ-${Math.floor(1000 + Math.random() * 9000)}`;
+        handleChange('code', randomCode);
+    };
+
     return (
-        <div className="bg-white p-8 rounded-xl min-h-screen">
-           <FormHeader title={initialData ? "Sửa dự án" : "Thêm dự án"} onBack={onBack} onSave={() => onSave(formData)} />
-           <div className="grid grid-cols-2 gap-x-12 gap-y-6 max-w-4xl">
-              <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-900">Khách hàng *</label>
-                  <select 
-                    className="w-full p-2 border border-slate-200 rounded-lg text-sm"
-                    value={formData.client_id}
-                    onChange={e => handleChange('client_id', Number(e.target.value))}
-                  >
-                      {clients.map((c: Client) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-              </div>
-              <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-900">Tên dự án *</label>
-                  <input type="text" value={formData.name} onChange={e => handleChange('name', e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg text-sm" />
-              </div>
-              <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-900">Công nghệ *</label>
-                  <select value={formData.technology} onChange={e => handleChange('technology', e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg text-sm">
-                      <option>Web</option><option>Mobile</option><option>Blockchain</option><option>AI</option>
-                  </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-900">Mã dự án *</label>
-                <input type="text" value={formData.code} readOnly className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50" />
+        <div className="bg-white p-8 rounded-xl min-h-screen animate-fade-in">
+            <div className="flex justify-between items-center mb-10 max-w-6xl mx-auto">
+                <div className="flex items-center gap-4">
+                    <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <ArrowLeft size={24} className="text-slate-700" />
+                    </button>
+                    <h1 className="text-2xl font-bold text-slate-900">Thông tin dự án</h1>
+                </div>
+                <div className="flex gap-3">
+                    <button onClick={onBack} className="px-10 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 transition-all">Huỷ</button>
+                    <button onClick={() => onSave(formData)} className="px-10 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-slate-800 shadow-md transition-all active:scale-95">Lưu</button>
+                </div>
             </div>
-              <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-900">Bộ phận phát triển</label>
-                  <select value={formData.division} onChange={e => handleChange('division', e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg text-sm"><option>Division 1</option><option>Division 2</option></select>
-              </div>
-              <div className="row-span-3 space-y-1">
-                   <label className="text-sm font-medium text-slate-900">Mô tả</label>
-                   <textarea value={formData.description} onChange={e => handleChange('description', e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg text-sm h-full"></textarea>
-              </div>
-              <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-900">Ngày bắt đầu *</label>
-                  <input type="date" value={formData.start_date} onChange={e => handleChange('start_date', e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg text-sm" />
-              </div>
-              <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-900">Ngày kết thúc *</label>
-                  <input type="date" value={formData.end_date} onChange={e => handleChange('end_date', e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg text-sm" />
-              </div>
-           </div>
+
+            <div className="grid grid-cols-2 gap-x-16 gap-y-8 max-w-6xl mx-auto">
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Khách hàng *</label>
+                    <select 
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none bg-white transition-all"
+                        value={formData.client_id || ''}
+                        onChange={e => handleChange('client_id', Number(e.target.value))}
+                    >
+                        <option value="">Chọn khách hàng</option>
+                        {clients.map((c: Client) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Tên dự án *</label>
+                    <input 
+                        type="text" 
+                        placeholder="Tên dự án"
+                        value={formData.name || ''} 
+                        onChange={e => handleChange('name', e.target.value)} 
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none transition-all" 
+                    />
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Công nghệ *</label>
+                    <select 
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none bg-white transition-all"
+                        value={formData.technology || ''}
+                        onChange={e => handleChange('technology', e.target.value)}
+                    >
+                        <option value="">Công nghệ</option>
+                        <option value="Blockchain">Blockchain</option>
+                        <option value="AI">AI</option>
+                        <option value="Web">Web</option>
+                        <option value="System">System</option>
+                    </select>
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Mã dự án *</label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            placeholder="Mã dự án"
+                            value={formData.code || ''} 
+                            onChange={e => handleChange('code', e.target.value)}
+                            className="flex-1 p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none bg-white transition-all" 
+                        />
+                        <button 
+                            onClick={handleAutoCode}
+                            className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50 transition-colors"
+                        >
+                            Tự động
+                        </button>
+                    </div>
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Bộ phận phát triển</label>
+                    <select 
+                        value={formData.division || ''} 
+                        onChange={e => handleChange('division', e.target.value)} 
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none bg-white transition-all"
+                    >
+                        <option value="">Bộ phận phát triển</option>
+                        <option>Division 1</option>
+                        <option>Division 2</option>
+                        <option>Global</option>
+                    </select>
+                </div>
+
+                <div className="row-span-3 space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Mô tả</label>
+                    <textarea 
+                        value={formData.description || ''} 
+                        onChange={e => handleChange('description', e.target.value)} 
+                        placeholder="Mô tả dự án ..."
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-sm h-[180px] resize-none focus:ring-1 focus:ring-black outline-none transition-all"
+                    ></textarea>
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Ngày bắt đầu *</label>
+                    <input 
+                        type="date" 
+                        value={formData.start_date || ''} 
+                        onChange={e => handleChange('start_date', e.target.value)} 
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none transition-all" 
+                    />
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Ngày kết thúc *</label>
+                    <input 
+                        type="date" 
+                        value={formData.end_date || ''} 
+                        onChange={e => handleChange('end_date', e.target.value)} 
+                        className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-black outline-none transition-all" 
+                    />
+                </div>
+            </div>
         </div>
     );
 };
 
-export const ProjectsModule = ({ data, clients, masterData, onAdd, onEdit, onDelete, onViewDetail }: any) => {
-    const [filters, setFilters] = useState({
-        search: '',
-        status: 'all',
-        technology: 'all',
-        division: 'all',
-        startDate: '',
-        endDate: ''
-    });
+// --- TRANG DANH SÁCH DỰ ÁN (S004 - View list) ---
+export const ProjectsModule = ({ data, clients, onAdd, onViewDetail }: any) => {
+    const [filters, setFilters] = useState({ search: '', status: 'Tất cả', tech: 'Tất cả', div: 'Tất cả' });
+    
+    const filteredData = useMemo(() => {
+        return data.filter((p: Project) => {
+            const matchesSearch = !filters.search || p.name.toLowerCase().includes(filters.search.toLowerCase());
+            const matchesDiv = filters.div === 'Tất cả' || p.division === filters.div;
+            return matchesSearch && matchesDiv;
+        }).sort((a: any, b: any) => b.id - a.id);
+    }, [data, filters]);
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 20;
-
-    const parseDate = (dateStr: string) => {
-        const [d, m, y] = dateStr.split('/');
-        return new Date(Number(y), Number(m) - 1, Number(d));
+    const formatVN = (dateStr: string) => {
+        if (!dateStr) return '-';
+        if (dateStr.includes('/')) return dateStr;
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
     };
-
-    const getProjectStatus = (p: Project) => {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const start = parseDate(p.start_date);
-        const end = parseDate(p.end_date);
-        if (start > now) return "Chưa thực hiện";
-        if (end < now) return "Đã hoàn thành";
-        return "Đang thực hiện";
-    };
-
-    const clearFilters = () => {
-        setFilters({ search: '', status: 'all', technology: 'all', division: 'all', startDate: '', endDate: '' });
-    };
-
-    const filteredData = data.filter((p: Project) => {
-        if (filters.search && !p.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
-        if (filters.status !== 'all') {
-            const status = getProjectStatus(p);
-            if (status !== filters.status) return false;
-        }
-        if (filters.technology !== 'all' && p.technology !== filters.technology) return false;
-        if (filters.division !== 'all' && p.division !== filters.division) return false;
-        if (filters.startDate && filters.endDate) {
-            const filterStart = new Date(filters.startDate);
-            const filterEnd = new Date(filters.endDate);
-            const projStart = parseDate(p.start_date);
-            const projEnd = parseDate(p.end_date);
-            const overlapStart = new Date(Math.max(filterStart.getTime(), projStart.getTime()));
-            const overlapEnd = new Date(Math.min(filterEnd.getTime(), projEnd.getTime()));
-            if (overlapStart > overlapEnd) return false;
-        }
-        return true;
-    }).sort((a: Project, b: Project) => b.id - a.id);
-
-    const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-    const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-    const techOptions = masterData?.find((m: any) => m.id === 'tech')?.items || [];
-    const divOptions = Array.from(new Set(data.map((p: Project) => p.division).filter(Boolean)));
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh] flex flex-col">
-            <div className="p-6">
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">Quản lý dự án</h2>
-                <div className="flex justify-between items-center gap-4 mb-4">
-                    <div className="flex items-center gap-3 flex-1">
-                        <div className="relative max-w-md w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                            <input type="text" placeholder="Tìm kiếm dự án ..." className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black" value={filters.search} onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))} />
-                        </div>
-                        <div className="px-3 py-1.5 bg-slate-100 rounded-lg text-sm font-medium text-slate-600 whitespace-nowrap">{filteredData.length} dự án</div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[85vh] p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-slate-900 mb-8 tracking-tight">Quản lý dự án</h2>
+            
+            <div className="flex justify-between items-center gap-4 mb-6">
+                <div className="flex items-center gap-4 flex-1 max-w-2xl">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm kiếm dự án ..." 
+                            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black transition-all" 
+                            value={filters.search} 
+                            onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))} 
+                        />
                     </div>
-                    <button onClick={onAdd} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">Thêm dự án</button>
+                    <div className="px-5 py-2.5 bg-slate-100 rounded-lg text-sm font-bold text-slate-500 whitespace-nowrap">
+                        {filteredData.length} dự án
+                    </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 mb-6">
-                    <div className="p-2"><Filter size={20} className="text-slate-900" /></div>
-                    <div className="relative">
-                        <select className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300" value={filters.status} onChange={(e) => setFilters(prev => ({...prev, status: e.target.value}))}>
-                            <option value="all">Trạng thái</option>
-                            <option value="Chưa thực hiện">Chưa thực hiện</option>
-                            <option value="Đang thực hiện">Đang thực hiện</option>
-                            <option value="Đã hoàn thành">Đã hoàn thành</option>
-                        </select>
-                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                    <div className="relative">
-                        <select className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300" value={filters.technology} onChange={(e) => setFilters(prev => ({...prev, technology: e.target.value}))}>
-                            <option value="all">Công nghệ</option>
-                            {techOptions.map((t: string) => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                    <div className="relative">
-                        <select className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300" value={filters.division} onChange={(e) => setFilters(prev => ({...prev, division: e.target.value}))}>
-                            <option value="all">Bộ phận</option>
-                            {divOptions.map((d: any) => <option key={d} value={String(d)}>{d}</option>)}
-                        </select>
-                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 hover:border-slate-300">
-                        <CalendarIcon size={14} className="text-slate-400"/>
-                        <span className="text-xs text-slate-400">Tất cả thời gian</span>
-                        <input type="date" className="text-xs text-slate-600 focus:outline-none w-4 bg-transparent opacity-0 absolute w-32 cursor-pointer" onChange={e => setFilters(prev => ({...prev, startDate: e.target.value}))} />
-                    </div>
-                    <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
-                    <div className="ml-auto"><button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-50">Tải xuống</button></div>
+                <button onClick={onAdd} className="bg-black text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-800 transition-all shadow-md">
+                    Thêm dự án
+                </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 mb-10">
+                <div className="p-2 text-slate-900"><Filter size={20} strokeWidth={2.5} /></div>
+                
+                <select className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all">
+                    <option>Trạng thái</option>
+                </select>
+
+                <select className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all">
+                    <option>Công nghệ</option>
+                </select>
+
+                <select className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all">
+                    <option>Bộ phận</option>
+                </select>
+
+                <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-1.5 hover:border-slate-300 cursor-pointer transition-all">
+                    <span className="text-xs font-bold text-slate-500">Tất cả thời gian</span>
+                    <CalendarIcon size={14} className="text-slate-400"/>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-white text-slate-900 font-bold border-b border-slate-200 text-xs">
-                            <tr>
-                                <th className="py-3 pr-4">Mã dự án</th>
-                                <th className="py-3 pr-4">Tên dự án</th>
-                                <th className="py-3 pr-4">Khách hàng</th>
-                                <th className="py-3 pr-4">Ngày bắt đầu</th>
-                                <th className="py-4 pr-4">Ngày kết thúc</th>
-                                <th className="py-3 pr-4">Bộ phận</th>
-                                <th className="py-3 pr-4">Man-month</th>
-                                <th className="py-3 pr-4">Công nghệ</th>
-                                <th className="py-3">Trạng thái</th>
+
+                <button className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50 transition-colors">Xoá bộ lọc</button>
+                
+                <div className="ml-auto">
+                    <button className="px-6 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors">
+                        Tải xuống
+                    </button>
+                </div>
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                    <thead className="text-slate-900 font-bold border-b border-slate-100 uppercase text-[11px] tracking-wider">
+                        <tr>
+                            <th className="py-4 pr-4">Mã dự án</th>
+                            <th className="py-4 pr-4">Tên dự án</th>
+                            <th className="py-4 pr-4">Khách hàng</th>
+                            <th className="py-4 pr-4">Ngày bắt đầu</th>
+                            <th className="py-4 pr-4">Ngày kết thúc</th>
+                            <th className="py-4 pr-4">Bộ phận</th>
+                            <th className="py-4 pr-4 text-center">Man-month</th>
+                            <th className="py-4 pr-4">Công nghệ</th>
+                            <th className="py-4">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredData.map((p: Project) => (
+                            <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors group" onClick={() => onViewDetail(p)}>
+                                <td className="py-5 pr-4 text-slate-500 font-medium">{p.code}</td>
+                                <td className="py-5 pr-4 font-bold text-slate-900">{p.name}</td>
+                                <td className="py-5 pr-4 text-slate-500 font-medium">{clients.find((c: Client) => c.id === p.client_id)?.name || '-'}</td>
+                                <td className="py-5 pr-4 text-slate-500">{formatVN(p.start_date)}</td>
+                                <td className="py-5 pr-4 text-slate-500">{formatVN(p.end_date)}</td>
+                                <td className="py-5 pr-4 text-slate-500">{p.division || '-'}</td>
+                                <td className="py-5 pr-4 text-center text-slate-500">{p.man_month || 50}</td>
+                                <td className="py-5 pr-4 text-slate-500">{p.technology || '-'}</td>
+                                <td className="py-5"><StatusBadge type="project" status={p.status_id} project={p} /></td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedData.map((p: Project) => (
-                                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer group" onClick={() => onViewDetail && onViewDetail(p)}>
-                                    <td className="py-4 pr-4 text-slate-600">{p.code}</td>
-                                    <td className="py-4 pr-4 font-medium text-slate-900">{p.name}</td>
-                                    <td className="py-4 pr-4 text-slate-600">{clients.find((c: Client) => c.id === p.client_id)?.name}</td>
-                                    <td className="py-4 pr-4 text-slate-600">{p.start_date}</td>
-                                    <td className="py-4 pr-4 text-slate-600">{p.end_date}</td>
-                                    <td className="py-4 pr-4 text-slate-600">{p.division}</td>
-                                    <td className="py-4 pr-4 text-slate-600">{p.man_month}</td>
-                                    <td className="py-4 pr-4 text-slate-600">{p.technology}</td>
-                                    <td className="py-4"><StatusBadge type="project" status={p.status_id} project={p} /></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             </div>
-            {totalPages > 1 && (
-                <div className="mt-auto p-6 border-t border-slate-100 flex justify-center gap-2">
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 disabled:opacity-50"><ChevronDown className="rotate-90" size={14}/></button>
-                    {Array.from({length: totalPages}, (_, i) => i + 1).map(page => (
-                        <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 flex items-center justify-center border rounded text-xs font-medium ${currentPage === page ? 'bg-red-500 border-red-500 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>{page}</button>
-                    ))}
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-8 h-8 flex items-center justify-center border rounded hover:bg-slate-50 disabled:opacity-50"><ChevronRight size={14}/></button>
-                </div>
-            )}
+
+            <div className="flex justify-center mt-12 gap-2">
+                <button className="w-8 h-8 flex items-center justify-center border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-30 transition-all" disabled><ChevronDown className="rotate-90" size={14}/></button>
+                <button className="w-8 h-8 flex items-center justify-center border border-black bg-black text-white text-xs font-bold rounded shadow-sm">1</button>
+                <button className="w-8 h-8 flex items-center justify-center border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-500 rounded transition-all">2</button>
+                <span className="flex items-center px-2 text-slate-300 font-medium">...</span>
+                <button className="w-8 h-8 flex items-center justify-center border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-500 rounded transition-all">10</button>
+                <button className="w-8 h-8 flex items-center justify-center border border-slate-200 hover:bg-slate-50 text-slate-500 rounded transition-all"><ChevronRight size={14}/></button>
+            </div>
         </div>
     );
 };
 
+// --- TRANG CHI TIẾT DỰ ÁN (S004 - View detail) ---
 export const ProjectDetailView = ({ project, onBack, onEdit, onNavigate }: any) => {
+    const [activeTab, setActiveTab] = useState<'contracts' | 'revenue' | 'history'>('contracts');
     const mockData = getMockData();
     const client = mockData.clients.find(c => c.id === project.client_id);
     const contracts = mockData.contracts.filter(c => c.project_id === project.id);
-    
+    const invoices = mockData.invoices.filter(i => i.project_id === project.id);
+
+    const totalValue = contracts.reduce((sum, c) => sum + c.total_value, 0);
+    const netRevenue = contracts.reduce((sum, c) => sum + (c.net_revenue || 0), 0);
+    const debt = invoices.filter(i => i.status_id === 4).reduce((sum, i) => sum + (i.total_amount - (i.paid_amount || 0)), 0);
+
+    const formatVN = (dateStr: string) => {
+        if (!dateStr) return '-';
+        if (dateStr.includes('/')) return dateStr;
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
+    };
+
     return (
-        <div className="min-h-screen pb-10">
-            <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+        <div className="min-h-screen pb-10 bg-slate-50 animate-fade-in">
+            <div className="bg-white px-8 py-5 flex justify-between items-center sticky top-0 z-10 border-b border-slate-200">
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full"><ArrowLeft size={24} className="text-slate-700" /></button>
-                    <div><h1 className="text-2xl font-bold text-slate-900">{project.name}</h1><p className="text-sm text-slate-500">Mã dự án: {project.code}</p></div>
+                    <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <ArrowLeft size={24} className="text-slate-700" />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900">{project.name}</h1>
+                        <p className="text-xs text-slate-500 font-medium">Mã dự án: {project.code}</p>
+                    </div>
                 </div>
                 <div className="flex gap-3">
-                    <button className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Request start</button>
-                    <button onClick={() => onEdit(project)} className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-slate-800">Chỉnh sửa</button>
+                    <button className="px-5 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-all">Request start</button>
+                    <button onClick={() => onNavigate('/contracts')} className="px-5 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-all">Thêm hợp đồng</button>
+                    <button onClick={() => onEdit(project)} className="px-8 py-2 bg-black text-white rounded-lg text-sm font-bold hover:bg-slate-800 shadow-md transition-all active:scale-95">Chỉnh sửa</button>
                 </div>
             </div>
-            <div className="p-8 max-w-7xl mx-auto space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative">
-                        <StatusBadge type="project" status={project.status_id} project={project} />
-                        <h3 className="font-bold text-slate-900 mb-6 mt-2">Thông tin dự án</h3>
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-6 text-sm">
-                            <div><span className="text-slate-500 block mb-1">Tên khách hàng:</span> <span className="font-medium text-slate-900">{client?.name}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Công nghệ:</span> <span className="font-medium text-slate-900">{project.technology}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Bộ phận:</span> <span className="font-medium text-slate-900">{project.division}</span></div>
-                            <div><span className="text-slate-500 block mb-1">Ngày bắt đầu:</span> <span className="font-medium text-slate-900">{project.start_date}</span></div>
+
+            <div className="px-8 max-w-[1600px] mx-auto space-y-6 mt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+                        <div className="flex justify-between items-start mb-8">
+                            <h3 className="font-bold text-slate-900 uppercase text-sm tracking-wider">Thông tin dự án</h3>
+                            <StatusBadge type="project" status={project.status_id} project={project} />
+                        </div>
+                        
+                        <div className="space-y-4 text-sm">
+                            <div className="flex items-center gap-4"><span className="text-slate-400 font-medium w-40">Tên khách hàng:</span> <span className="font-bold text-slate-900">{client?.name}</span></div>
+                            <div className="flex items-center gap-4"><span className="text-slate-400 font-medium w-40">Công nghệ:</span> <span className="font-bold text-slate-900">{project.technology}</span></div>
+                            <div className="flex items-center gap-4"><span className="text-slate-400 font-medium w-40">Bộ phận phát triển:</span> <span className="font-bold text-slate-900">{project.division}</span></div>
+                            <div className="flex items-center gap-4"><span className="text-slate-400 font-medium w-40">Ngày bắt đầu:</span> <span className="font-bold text-slate-900">{formatVN(project.start_date)}</span></div>
+                            <div className="flex items-center gap-4"><span className="text-slate-400 font-medium w-40">Ngày kết thúc:</span> <span className="font-bold text-slate-900">{formatVN(project.end_date)}</span></div>
+                            <div className="flex items-start gap-4"><span className="text-slate-400 font-medium w-40 mt-0.5">Mô tả:</span> <span className="font-bold text-slate-900 flex-1 leading-relaxed">{project.description || 'Số hoá phần mềm thanh toán mobile'}</span></div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                         <h3 className="font-bold text-slate-900 mb-4">Tổng quan tài chính</h3>
-                         <div className="space-y-4">
-                            <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer" onClick={() => onNavigate('/contracts')}>
-                                <div><div className="text-xs text-slate-500 mb-1 font-medium">Hợp đồng</div><div className="font-bold text-lg">{contracts.length}</div></div>
-                                <ArrowRight size={18} className="text-slate-400" />
+
+                    <div className="lg:col-span-4 space-y-4">
+                        <h3 className="font-bold text-slate-900 mb-2 pl-2 uppercase text-[10px] tracking-widest text-slate-400">Tổng quan tài chính</h3>
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex justify-between items-center group cursor-pointer hover:bg-white transition-all shadow-sm" onClick={() => onNavigate('/contracts')}>
+                            <div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Tổng giá trị hợp đồng</div>
+                                <div className="text-xl font-bold text-slate-900">{totalValue.toLocaleString()} US$</div>
                             </div>
-                         </div>
+                            <div className="p-1.5 rounded-full border border-slate-300 group-hover:border-black transition-colors"><ChevronRight size={18} /></div>
+                        </div>
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex justify-between items-center group cursor-pointer hover:bg-white transition-all shadow-sm" onClick={() => onNavigate('/contracts')}>
+                            <div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Doanh thu (NET)</div>
+                                <div className="text-xl font-bold text-slate-900">{netRevenue.toLocaleString()} US$</div>
+                            </div>
+                            <div className="p-1.5 rounded-full border border-slate-300 group-hover:border-black transition-colors"><ChevronRight size={18} /></div>
+                        </div>
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex justify-between items-center group cursor-pointer hover:bg-white transition-all shadow-sm" onClick={() => onNavigate('/invoices')}>
+                            <div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Công nợ</div>
+                                <div className="text-xl font-bold text-slate-900">{debt.toLocaleString()} US$</div>
+                            </div>
+                            <div className="p-1.5 rounded-full border border-slate-300 group-hover:border-black transition-colors"><ChevronRight size={18} /></div>
+                        </div>
                     </div>
+                </div>
+
+                <div className="bg-slate-200 p-1 rounded-xl w-fit flex gap-1 shadow-inner">
+                    <button onClick={() => setActiveTab('contracts')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'contracts' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>Hợp đồng ({contracts.length})</button>
+                    <button onClick={() => setActiveTab('revenue')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'revenue' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>Doanh thu & Công số</button>
+                    <button onClick={() => setActiveTab('history')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>Lịch sử thay đổi</button>
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm min-h-[500px]">
+                    {activeTab === 'contracts' && (
+                        <div className="space-y-6">
+                            {contracts.map((c, i) => {
+                                let statusLabel = 'Chờ ký';
+                                let badgeColor = 'bg-slate-100 text-slate-500';
+                                if (c.status_id === 2) {
+                                    const now = new Date();
+                                    const end = new Date(c.end_date.split('/').reverse().join('-'));
+                                    const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                    if (diff < 0) { statusLabel = 'Đã hết hạn'; badgeColor = 'bg-red-50 text-red-500'; }
+                                    else if (diff <= 3) { statusLabel = `Hết hạn sau ${diff} ngày`; badgeColor = 'bg-orange-50 text-orange-500'; }
+                                    else { statusLabel = 'Đã ký kết'; badgeColor = 'bg-emerald-50 text-emerald-500'; }
+                                }
+                                return (
+                                    <div key={i} className="border border-slate-100 rounded-xl p-8 hover:bg-slate-50 transition-all flex justify-between items-start shadow-sm hover:shadow-md">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <h4 className="text-lg font-bold text-slate-900 uppercase tracking-tight">{c.code}</h4>
+                                                <span className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeColor}`}>{statusLabel}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-x-20 gap-y-4 text-sm">
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span className="text-slate-400 font-medium">Ngày ký kết:</span> <span className="font-bold text-slate-900">{c.sign_date || '-'}</span></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span className="text-slate-400 font-medium">Ngày bắt đầu:</span> <span className="font-bold text-slate-900">{c.start_date}</span></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span className="text-slate-400 font-medium">Giá trị hợp đồng:</span> <span className="font-bold text-slate-900">{c.total_value.toLocaleString()} {c.currency}</span></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span className="text-slate-400 font-medium">Ngày kết thúc:</span> <span className="font-bold text-slate-900">{c.end_date}</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {contracts.length === 0 && <p className="text-center text-slate-400 py-20 font-medium">Chưa có hợp đồng nào liên kết với dự án này.</p>}
+                        </div>
+                    )}
+
+                    {activeTab === 'revenue' && (
+                        <div className="p-6 h-[500px]">
+                             <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={[
+                                    {name: '01/2024', rev: 350000, mm: 1.5},
+                                    {name: '02/2024', rev: 400000, mm: 1.8},
+                                    {name: '03/2024', rev: 300000, mm: 1.2},
+                                    {name: '04/2024', rev: 450000, mm: 2.1},
+                                    {name: '05/2024', rev: 500000, mm: 2.0},
+                                    {name: '06/2024', rev: 420000, mm: 1.9},
+                                ]}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} dy={10} />
+                                    <YAxis hide />
+                                    <RechartsTooltip 
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                return (
+                                                    <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xl">
+                                                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">{payload[0].payload.name}</div>
+                                                        <div className="text-sm font-bold text-slate-900 mb-1">{Number(payload[0].value).toLocaleString()} US$</div>
+                                                        <div className="text-sm font-bold text-slate-500">{payload[1].value} man-month</div>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    <Bar dataKey="rev" fill="#cbd5e1" barSize={40} radius={[4, 4, 0, 0]} />
+                                    <Line type="monotone" dataKey="mm" stroke="#000" strokeWidth={3} dot={{ r: 4, fill: '#000', strokeWidth: 2, stroke: '#fff' }} />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+
+                    {activeTab === 'history' && (
+                        <div className="space-y-8 py-2">
+                            {/* Card Item 1 (#37 - #41) */}
+                            <div className="border border-slate-200 rounded-xl p-6 bg-white shadow-sm transition-all hover:border-slate-300">
+                                <div className="font-bold text-slate-900 mb-6 flex items-center gap-3">
+                                    Thay đổi thông tin: Địa chỉ 
+                                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                                </div>
+                                
+                                <div className="space-y-3 mb-8">
+                                    <div className="text-sm">
+                                        <p className="font-medium text-slate-700">Trước thay đổi:</p>
+                                    </div>
+                                    <div className="text-sm">
+                                        <p className="font-medium text-slate-700">Sau thay đổi:</p>
+                                    </div>
+                                </div>
+
+                                <div className="text-sm text-slate-500 font-medium">
+                                    Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024
+                                </div>
+                            </div>
+
+                            {/* Card Item 2 (#42 - #44) */}
+                            <div className="border border-slate-200 rounded-xl p-6 bg-white shadow-sm transition-all hover:border-slate-300">
+                                <div className="font-bold text-slate-900 mb-6 uppercase text-sm tracking-wide">
+                                    Tạo mới
+                                </div>
+                                
+                                <div className="text-sm text-slate-500 font-medium">
+                                    Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024
+                                </div>
+                            </div>
+
+                            {/* Pagination (#45) */}
+                            <div className="flex justify-center items-center gap-3 pt-10">
+                                <button className="p-1 hover:text-black text-slate-400 transition-colors">
+                                    <ChevronDown className="rotate-90" size={18}/>
+                                </button>
+                                <button className="w-8 h-8 flex items-center justify-center border border-black bg-slate-100 rounded text-xs font-bold text-slate-900">1</button>
+                                <button className="w-8 h-8 flex items-center justify-center text-xs font-medium text-slate-500 hover:text-black">2</button>
+                                <span className="flex items-center px-1 text-slate-300 font-medium">...</span>
+                                <button className="w-8 h-8 flex items-center justify-center text-xs font-medium text-slate-500 hover:text-black">10</button>
+                                <button className="p-1 hover:text-black text-slate-400 transition-colors">
+                                    <ChevronRight size={18}/>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

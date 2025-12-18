@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { getMockData } from './services/mockData';
@@ -22,10 +23,10 @@ const AppContent = () => {
   const [darkMode, setDarkMode] = useState(false);
   
   const initialData = getMockData();
-  const [clients] = useState<Client[]>(initialData.clients);
-  const [projects] = useState<Project[]>(initialData.projects);
-  const [contracts] = useState<Contract[]>(initialData.contracts);
-  const [invoices] = useState<Invoice[]>(initialData.invoices);
+  const [clients, setClients] = useState<Client[]>(initialData.clients);
+  const [projects, setProjects] = useState<Project[]>(initialData.projects);
+  const [contracts, setContracts] = useState<Contract[]>(initialData.contracts);
+  const [invoices, setInvoices] = useState<Invoice[]>(initialData.invoices);
   const [statements] = useState<BankStatement[]>(initialData.statements);
   const [users] = useState<User[]>(initialData.users);
   const [notifications] = useState<Notification[]>(initialData.notifications);
@@ -45,7 +46,6 @@ const AppContent = () => {
     else document.documentElement.classList.remove('dark');
   }, [darkMode]);
 
-  // Reset view mode when path changes
   useEffect(() => {
     setViewMode('list');
     setSelectedItem(null);
@@ -53,8 +53,32 @@ const AppContent = () => {
 
   if (!isLoggedIn) return <LoginScreen onLogin={() => setIsLoggedIn(true)} />;
 
+  // Logic lưu dữ liệu chung cho các module
+  const handleSave = (moduleName: string, formData: any) => {
+      if (moduleName === 'project') {
+          if (formData.id) {
+              setProjects(prev => prev.map(p => p.id === formData.id ? { ...p, ...formData } : p));
+          } else {
+              const newProject = { 
+                  ...formData, 
+                  id: projects.length + 1,
+                  status_id: 2 // Default Active
+              };
+              setProjects(prev => [newProject, ...prev]);
+          }
+      } else if (moduleName === 'client') {
+          if (formData.id) {
+              setClients(prev => prev.map(c => c.id === formData.id ? { ...c, ...formData } : c));
+          } else {
+              setClients(prev => [{ ...formData, id: clients.length + 1 }, ...prev]);
+          }
+      }
+      setViewMode('list');
+      setSelectedItem(null);
+  };
+
   const renderModule = (moduleName: string, ListComp: any, DetailComp: any, FormComp: any, dataProps: any) => {
-    if (viewMode === 'form') return <FormComp {...dataProps} initialData={selectedItem} onBack={() => setViewMode('list')} onSave={() => setViewMode('list')} />;
+    if (viewMode === 'form') return <FormComp {...dataProps} initialData={selectedItem} onBack={() => setViewMode('list')} onSave={(data: any) => handleSave(moduleName, data)} />;
     if (viewMode === 'detail' && selectedItem) return <DetailComp {...dataProps} {...(moduleName === 'client' ? {client: selectedItem} : moduleName === 'project' ? {project: selectedItem} : moduleName === 'contract' ? {contract: selectedItem} : {invoice: selectedItem})} onBack={() => setViewMode('list')} onEdit={() => setViewMode('form')} onNavigate={navigate} />;
     return <ListComp {...dataProps} onAdd={() => { setSelectedItem(null); setViewMode('form'); }} onViewDetail={(item: any) => { setSelectedItem(item); setViewMode('detail'); }} />;
   };
