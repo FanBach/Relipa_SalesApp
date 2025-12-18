@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line, AreaChart, Area, ComposedChart
 } from 'recharts';
 import { Invoice, Project, Contract, Client } from '../types';
-import { ChevronDown, ChevronUp, DollarSign, Users, Briefcase, FileText, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { ChevronDown, DollarSign, Users, Briefcase, FileText, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface DashboardProps {
   invoices: Invoice[];
@@ -14,12 +14,12 @@ interface DashboardProps {
 }
 
 const COLORS = {
-  blue: '#38bdf8',   // Division 1 / Actual / Plans
-  amber: '#fbbf24',  // Division 2 / Realized
-  green: '#84cc16',  // Global / Forecast / Revenue
+  blue: '#38bdf8',   // Division 1 / Khách hàng A / Dự án 1 / Đã thanh toán
+  amber: '#fbbf24',  // Division 2 / Khách hàng B / Dự án 2 / Chờ thanh toán
+  green: '#84cc16',  // Global / Khách hàng C / Dự án 3 / Quá hạn thanh toán
   pink: '#f472b6',   // R&D
-  red: '#ef4444',    // Payment / Overdue
-  slate: '#94a3b8',  // Plan / Secondary
+  red: '#ef4444',    // Thanh toán (Line chart)
+  slate: '#94a3b8',  // Kế hoạch
   lightSlate: '#e2e8f0'
 };
 
@@ -74,8 +74,6 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, clients }) => {
-  const [currency, setCurrency] = useState('USD');
-  const [year, setYear] = useState(2025);
   const [revExpanded, setRevExpanded] = useState(true);
   const [payExpanded, setPayExpanded] = useState(true);
   const [conExpanded, setConExpanded] = useState(true);
@@ -101,26 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
 
   return (
     <div className="space-y-8 pb-12 animate-fade-in px-4 max-w-[1600px] mx-auto">
-      {/* Header Filters */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard</h1>
-        <div className="flex items-center gap-3">
-           <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl">
-             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Đơn vị tiền</span>
-             <select className="text-xs font-extrabold text-slate-700 focus:outline-none bg-transparent" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-               <option value="USD">USD</option><option value="VND">VND</option>
-             </select>
-           </div>
-           <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl">
-             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Năm</span>
-             <select className="text-xs font-extrabold text-slate-700 focus:outline-none bg-transparent" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-               <option value={2024}>2024</option><option value={2025}>2025</option>
-             </select>
-           </div>
-        </div>
-      </div>
-
-      {/* Top Stat Cards */}
+      {/* Header Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard title="Doanh thu tháng này" value="50.000,00 US$" subValue="+12% so với tháng trước" trend={12} icon={DollarSign} colorClass="bg-blue-600" />
         <StatCard title="Khách hàng" value="30" subValue="+2 khách hàng mới tháng này" trend={5} icon={Users} colorClass="bg-emerald-600" />
@@ -134,7 +113,7 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
         <SectionHeader title="Doanh thu" expanded={revExpanded} onToggle={() => setRevExpanded(!revExpanded)} />
         {revExpanded && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* 1. Pie Bộ phận: Đúng màu và nhãn */}
+            {/* Pie Bộ phận */}
             <div className="lg:col-span-4 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ doanh thu theo bộ phận</h3>
               <div className="h-64 relative">
@@ -151,13 +130,14 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* 2. Bar Thời gian: Kế hoạch (Xanh), Thực tế (Cam), Dự báo (Xanh lá) */}
+            {/* Bar Thời gian */}
             <div className="lg:col-span-8 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Phân bổ doanh thu theo thời gian</h3>
-                <div className="flex gap-2">
-                  <select className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[9px] font-black focus:outline-none"><option>Theo quý</option></select>
-                  <select className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[9px] font-black focus:outline-none"><option>Tất cả bộ phận</option></select>
+                <div className="flex gap-2 text-[9px] font-black uppercase text-slate-400">
+                  <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#38bdf8]"></div> Kế hoạch</span>
+                  <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#fbbf24]"></div> Thực tế</span>
+                  <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#84cc16]"></div> Dự báo</span>
                 </div>
               </div>
               <div className="h-64">
@@ -167,7 +147,6 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
                     <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="black" />
                     <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
                     <RechartsTooltip />
-                    <Legend verticalAlign="bottom" align="center" iconType="rect" wrapperStyle={{ fontSize: '10px', fontWeight: 'black', paddingTop: '20px' }} />
                     <Bar dataKey="p" name="Kế hoạch" fill={COLORS.blue} radius={[4, 4, 0, 0]} barSize={20} />
                     <Bar dataKey="a" name="Thực tế" fill={COLORS.amber} radius={[4, 4, 0, 0]} barSize={20} />
                     <Bar dataKey="f" name="Dự báo" fill={COLORS.green} radius={[4, 4, 0, 0]} barSize={20} />
@@ -176,15 +155,9 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* 3. Area YTD: Kế hoạch (Xám đứt quãng), Thực tế (Vàng), Dự báo (Xanh lá) */}
+            {/* Area YTD */}
             <div className="lg:col-span-12 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-sm font-black text-slate-900 uppercase">Doanh thu luỹ kế (YTD)</h3>
-                <div className="flex gap-2">
-                  <select className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black focus:outline-none"><option>Theo tháng</option></select>
-                  <select className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black focus:outline-none"><option>Tất cả bộ phận</option></select>
-                </div>
-              </div>
+              <h3 className="text-sm font-black text-slate-900 uppercase mb-8 text-center">Doanh thu luỹ kế (YTD)</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={monthlyData}>
@@ -204,15 +177,9 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* 4. Pie Khách hàng: KH A (Xanh), KH B (Cam), KH C (Xanh lá) */}
+            {/* Pie Khách hàng */}
             <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Phân bổ doanh thu theo khách hàng</h3>
-                <div className="flex gap-2">
-                  <select className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[9px] font-black"><option>Tất cả tháng</option></select>
-                  <select className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[9px] font-black"><option>Tất cả bộ phận</option></select>
-                </div>
-              </div>
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ doanh thu theo khách hàng</h3>
               <div className="h-60 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -226,15 +193,9 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* 5. Pie Dự án: Dự án 1 (Xanh), Dự án 2 (Cam), Dự án 3 (Xanh lá) */}
+            {/* Pie Dự án */}
             <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Phân bổ doanh thu theo dự án</h3>
-                <div className="flex gap-2">
-                  <select className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[9px] font-black"><option>Tất cả tháng</option></select>
-                  <select className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[9px] font-black"><option>Tất cả bộ phận</option></select>
-                </div>
-              </div>
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ doanh thu theo dự án</h3>
               <div className="h-60 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -248,12 +209,9 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* 6. Bar Phân bổ bộ phận theo tháng: D1 (Xanh), D2 (Cam), R&D (Xanh lá) */}
+            {/* Bar Phân bổ bộ phận */}
             <div className="lg:col-span-12 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Phân bổ doanh thu các bộ phận</h3>
-                <select className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black focus:outline-none"><option>Theo tháng</option></select>
-              </div>
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-8">Phân bổ doanh thu các bộ phận</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData}>
@@ -264,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
                     <Legend verticalAlign="bottom" align="center" iconType="rect" wrapperStyle={{ fontSize: '10px', fontWeight: 'black', paddingTop: '20px' }} />
                     <Bar dataKey="d1" name="Division 1" fill={COLORS.blue} radius={[2, 2, 0, 0]} barSize={12} />
                     <Bar dataKey="d2" name="Division 2" fill={COLORS.amber} radius={[2, 2, 0, 0]} barSize={12} />
-                    <Bar dataKey="global" name="R&D" fill={COLORS.green} radius={[2, 2, 0, 0]} barSize={12} />
+                    <Bar dataKey="global" name="Global" fill={COLORS.green} radius={[2, 2, 0, 0]} barSize={12} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -278,7 +236,6 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
         <SectionHeader title="Thanh toán" expanded={payExpanded} onToggle={() => setPayExpanded(!payExpanded)} />
         {payExpanded && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* 1. Line Chart 3 đường: Doanh thu (Xanh lá), Công nợ (Vàng), Thanh toán (Đỏ) */}
             <div className="lg:col-span-12 bg-white p-8 rounded-[24px] border border-slate-100 shadow-sm">
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-10">Doanh thu & công nợ & thanh toán</h3>
               <div className="h-80 w-full">
@@ -297,12 +254,8 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* 2. Pie Tình trạng thanh toán: Đã TT (Xanh), Chờ TT (Cam), Quá hạn (Xanh lá) */}
             <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Tình trạng thanh toán</h3>
-                <select className="px-2 py-1 bg-slate-50 border border-slate-100 rounded text-[9px] font-black"><option>Tất cả tháng</option></select>
-              </div>
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Tình trạng thanh toán</h3>
               <div className="h-60 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -316,7 +269,6 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* 3. Pie Công nợ: KH A (Xanh), KH B (Cam), KH C (Xanh lá) */}
             <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ công nợ theo khách hàng</h3>
               <div className="h-60 relative">
@@ -332,7 +284,7 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            {/* List Hoá đơn... (Giữ nguyên không đổi) */}
+            {/* List Hoá đơn cảnh báo */}
             <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
               <h3 className="text-[11px] font-black text-slate-900 uppercase mb-6 flex justify-between">Hoá đơn quá hạn <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[9px] font-black">5 hoá đơn</span></h3>
               <div className="space-y-3">
