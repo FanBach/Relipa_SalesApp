@@ -107,7 +107,7 @@ const App = () => {
                 )}
                 
                 <Routes>
-                    <Route path="/" element={<Dashboard invoices={invoices} projects={projects} contracts={contracts} />} />
+                    <Route path="/" element={<Dashboard invoices={invoices} projects={projects} contracts={contracts} clients={clients} />} />
                     <Route path="/accounts" element={
                         <AccountsModule 
                             data={users} 
