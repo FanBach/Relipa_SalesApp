@@ -143,7 +143,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
          {errors.system && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{errors.system}</div>}
          
          <div className="grid grid-cols-2 gap-x-12 gap-y-6 max-w-5xl">
-            {/* Row 1 */}
             <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-900">Tên khách hàng *</label>
                 <input 
@@ -181,7 +180,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 </div>
             </div>
 
-            {/* Row 2 */}
             <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-900">Mã số thuế</label>
                 <input 
@@ -208,7 +206,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.type && <p className="text-xs text-red-500">{errors.type}</p>}
             </div>
 
-            {/* Row 3 */}
             <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-900">Người đại diện *</label>
                 <input 
@@ -235,7 +232,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.lead_source && <p className="text-xs text-red-500">{errors.lead_source}</p>}
             </div>
 
-            {/* Row 4 */}
             <div className="space-y-1">
                  <label className="text-sm font-medium text-slate-900">Địa chỉ *</label>
                  <input 
@@ -262,7 +258,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.lead_get_id && <p className="text-xs text-red-500">{errors.lead_get_id}</p>}
             </div>
 
-            {/* Row 5 */}
             <div className="space-y-1">
                  <label className="text-sm font-medium text-slate-900">Ngày ký đầu *</label>
                  <div className="relative">
@@ -290,7 +285,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.owner_sales_id && <p className="text-xs text-red-500">{errors.owner_sales_id}</p>}
             </div>
 
-            {/* Row 6 */}
             <div className="col-span-2 space-y-1">
                 <label className="text-sm font-medium text-slate-900">Ghi chú</label>
                 <textarea 
@@ -302,7 +296,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.noted && <p className="text-xs text-red-500">{errors.noted}</p>}
             </div>
 
-            {/* Payers Section */}
             <div className="col-span-2 mt-4">
                 <label className="text-sm font-bold text-slate-900 block mb-3">Người thanh toán *</label>
                 <div className="space-y-3">
@@ -653,7 +646,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                     <div className="text-xs text-slate-500 mb-1 font-medium">Tổng giá trị hợp đồng</div>
                                     <div className="font-bold text-lg text-slate-900">{totalContractValue.toLocaleString()} US$</div>
                                 </div>
-                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">{clientContracts.length}</div>
+                                <ChevronRight size={20} className="text-slate-400" />
                             </div>
                             <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onNavigate('contracts')}>
                                 <div>
@@ -724,15 +717,26 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                          {activeTab === 'contracts' && (
                              <div className="space-y-4">
                                  {clientContracts.map((c: Contract) => {
+                                     // Logic check status for badge
+                                     let statusLabel = 'Dự kiến';
+                                     if (c.status_id === 1) statusLabel = 'Đang trao đổi';
+                                     else if (c.status_id === 2) {
+                                         const now = new Date();
+                                         const end = new Date(c.end_date.split('/').reverse().join('-'));
+                                         const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                         if (diff < 0) statusLabel = 'Đã hết hạn';
+                                         else if (diff <= 3) statusLabel = `Hết hạn sau ${diff} ngày`;
+                                         else statusLabel = 'Đã ký';
+                                     }
+
                                      return (
                                      <div key={c.id} className="border border-slate-200 rounded-lg p-5 flex justify-between items-center hover:bg-slate-50 transition-colors">
                                          <div className="flex-1">
                                              <div className="flex items-center gap-3 mb-2">
                                                  <span className="font-bold text-slate-900 text-lg">{c.code}</span>
                                                  <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-medium">
-                                                     {c.status_id === 1 ? 'Chờ ký' : c.status_id === 2 ? 'Đã ký' : 'Hết hạn sau 3 ngày'}
+                                                     {statusLabel}
                                                  </span>
-                                                 <span className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
                                              </div>
                                              <div className="grid grid-cols-2 gap-y-1 text-sm text-slate-600 max-w-lg">
                                                  <div>Ngày ký kết: <span className="font-medium text-slate-900">{c.sign_date || '-'}</span></div>
@@ -777,7 +781,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                 {changeLogs.length > 0 ? changeLogs.map((log: ChangeLog) => (
                                     <div key={log.id} className="flex gap-4">
                                         <div className="flex flex-col items-center">
-                                            <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">{log.id}</div>
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs">{log.id}</div>
                                         </div>
                                         <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                             {log.action_type === 'create' ? (
@@ -801,7 +805,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                     <>
                                         <div className="flex gap-4">
                                             <div className="flex flex-col items-center">
-                                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">2</div>
+                                                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs">2</div>
                                             </div>
                                             <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                                 <div className="font-bold text-sm mb-2 flex items-center gap-2">
@@ -814,7 +818,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="flex flex-col items-center">
-                                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">1</div>
+                                                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs">1</div>
                                             </div>
                                             <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                                 <div className="font-bold text-sm mb-1">Tạo mới</div>

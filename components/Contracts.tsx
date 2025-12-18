@@ -522,7 +522,6 @@ export const ContractDetailView = ({ contract, project, invoices = [], onBack, o
                                 <div>
                                     <div className="flex items-center gap-2 mb-4">
                                         <h4 className="font-bold text-lg text-slate-900">Hoá đơn đã tạo</h4>
-                                        <span className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{contractInvoices.length}</span>
                                     </div>
                                     
                                     <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -575,7 +574,7 @@ export const ContractDetailView = ({ contract, project, invoices = [], onBack, o
                                 <div className="space-y-6 max-w-3xl">
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
-                                            <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">2</div>
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs">2</div>
                                         </div>
                                         <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                             <div className="font-bold text-sm mb-2 flex items-center gap-2">
@@ -589,7 +588,7 @@ export const ContractDetailView = ({ contract, project, invoices = [], onBack, o
                                     
                                     <div className="flex gap-4">
                                         <div className="flex flex-col items-center">
-                                            <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">1</div>
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs">1</div>
                                         </div>
                                         <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                             <div className="font-bold text-sm mb-1">Tạo mới</div>
