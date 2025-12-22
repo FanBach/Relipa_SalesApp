@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Edit3, ArrowLeft, X, RefreshCw, ChevronDown, ChevronRight, Search, Filter, Download, Calendar as CalendarIcon, FileText, Plus, Clock, Trash2 } from 'lucide-react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Contract, Project, Client, Invoice, Permission, User, ProjectMilestone, ContractPayer, PaymentMilestone, AllocationItem } from '../types';
-import { StatusBadge } from './Shared';
+import { StatusBadge, DateRangePicker, parseDDMMYYYY } from './Shared';
 import { getMockData } from '../services/mockData';
 import { RequestStartModal } from './ProjectContractFeatures';
 
@@ -437,7 +437,7 @@ export const ContractForm = ({ initialData, projects, clients, masterData, onBac
 };
 
 export const ContractsModule = ({ data, projects, clients, onAdd, onViewDetail }: any) => {
-    const [filters, setFilters] = useState({ search: '', type: 'Tất cả', validity: 'Tất cả', currency: 'Tất cả', status: 'Tất cả' });
+    const [filters, setFilters] = useState({ search: '', type: 'Tất cả', validity: 'Tất cả', currency: 'Tất cả', status: 'Tất cả', startDate: '', endDate: '' });
     
     const filteredData = useMemo(() => {
         return data.filter((c: Contract) => {
@@ -455,16 +455,47 @@ export const ContractsModule = ({ data, projects, clients, onAdd, onViewDetail }
             const statusMap: Record<number, string> = { 1: 'Chờ ký', 2: 'Đã ký', 3: 'Dự kiến' };
             const matchesStatus = filters.status === 'Tất cả' || statusMap[c.status_id] === filters.status;
 
-            return matchesSearch && matchesType && matchesCurrency && matchesStatus;
+            let matchesDate = true;
+            if (filters.startDate || filters.endDate) {
+                const date = parseDDMMYYYY(c.start_date);
+                if (date) {
+                    if (filters.startDate) {
+                        const start = new Date(filters.startDate);
+                        start.setHours(0,0,0,0);
+                        if (date < start) matchesDate = false;
+                    }
+                    if (filters.endDate) {
+                        const end = new Date(filters.endDate);
+                        end.setHours(23,59,59,999);
+                        if (date > end) matchesDate = false;
+                    }
+                } else {
+                    matchesDate = false;
+                }
+            }
+
+            return matchesSearch && matchesType && matchesCurrency && matchesStatus && matchesDate;
         }).sort((a: any, b: any) => b.id - a.id);
     }, [data, filters, projects, clients]);
 
-    const handleClearFilters = () => setFilters({ search: '', type: 'Tất cả', validity: 'Tất cả', currency: 'Tất cả', status: 'Tất cả' });
+    const handleClearFilters = () => setFilters({ search: '', type: 'Tất cả', validity: 'Tất cả', currency: 'Tất cả', status: 'Tất cả', startDate: '', endDate: '' });
+
+    const isFiltered = filters.type !== 'Tất cả' || filters.validity !== 'Tất cả' || filters.currency !== 'Tất cả' || filters.status !== 'Tất cả' || filters.startDate !== '' || filters.endDate !== '';
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[85vh] p-8 animate-fade-in">
-            <h2 className="text-2xl font-bold text-slate-900 mb-8 tracking-tight">Quản lý hợp đồng</h2>
-            
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Quản lý hợp đồng</h2>
+                <div className="flex items-center gap-3">
+                    <div className="px-5 py-2.5 bg-slate-100 rounded-lg text-sm font-bold text-slate-500 whitespace-nowrap">
+                        {filteredData.length} hợp đồng
+                    </div>
+                    <button onClick={onAdd} className="bg-black text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-800 transition-all shadow-md">
+                        Thêm hợp đồng
+                    </button>
+                </div>
+            </div>
+
             <div className="flex justify-between items-center gap-4 mb-6">
                 <div className="flex items-center gap-4 flex-1 max-w-2xl">
                     <div className="relative flex-1">
@@ -477,17 +508,6 @@ export const ContractsModule = ({ data, projects, clients, onAdd, onViewDetail }
                             onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))} 
                         />
                     </div>
-                    <div className="px-5 py-2.5 bg-slate-100 rounded-lg text-sm font-bold text-slate-500 whitespace-nowrap">
-                        {filteredData.length} hợp đồng
-                    </div>
-                </div>
-                <div className="flex gap-3">
-                    <button className="px-6 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors">
-                        Tải xuống
-                    </button>
-                    <button onClick={onAdd} className="bg-black text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-800 transition-all shadow-md">
-                        Thêm hợp đồng
-                    </button>
                 </div>
             </div>
 
@@ -505,7 +525,24 @@ export const ContractsModule = ({ data, projects, clients, onAdd, onViewDetail }
                 <select className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
                     <option>Trạng thái ký</option><option>Chờ ký</option><option>Đã ký</option><option>Dự kiến</option>
                 </select>
-                <button onClick={handleClearFilters} className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50 transition-colors">Xoá bộ lọc</button>
+                
+                <div className="w-auto">
+                    <DateRangePicker 
+                        startDate={filters.startDate} 
+                        endDate={filters.endDate} 
+                        onChange={(start, end) => setFilters(prev => ({ ...prev, startDate: start, endDate: end }))} 
+                    />
+                </div>
+
+                {isFiltered && (
+                    <button onClick={handleClearFilters} className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50 transition-colors animate-fade-in">Xoá bộ lọc</button>
+                )}
+
+                <div className="ml-auto">
+                    <button className="px-6 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors">
+                        Tải xuống
+                    </button>
+                </div>
             </div>
 
             <div className="overflow-x-auto">

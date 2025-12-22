@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, PlusCircle, X, CheckSquare, Calendar as CalendarIcon, ChevronDown, ChevronRight, Edit3, Filter } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Client, Project, Contract, Invoice, ChangeLog, User, MasterCategory, Permission } from '../types';
-import { StatusBadge, FormHeader, FilterBar } from './Shared';
+import { StatusBadge, FormHeader, FilterBar, DateRangePicker, parseDDMMYYYY } from './Shared';
 import { getMockData } from '../services/mockData';
 
 export const ClientForm = ({ initialData, onBack, onSave, masterData, users, clients, permissions = [] }: { 
@@ -222,14 +222,13 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 <select 
                     value={formData.lead_source}
                     onChange={e => handleChange('lead_source', e.target.value)}
-                    className={`w-full p-2.5 border rounded-lg text-sm focus:ring-1 focus:outline-none ${errors.lead_source ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                    className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black`}
                 >
                     <option value="">Lead source</option>
                     {masterData.find(m => m.id === 'lead_source')?.items.map(item => (
                         <option key={item} value={item}>{item}</option>
                     ))}
                 </select>
-                {errors.lead_source && <p className="text-xs text-red-500">{errors.lead_source}</p>}
             </div>
 
             <div className="space-y-1">
@@ -309,20 +308,18 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                                     type="text" 
                                     value={payer.name} 
                                     onChange={e => handlePayerChange(index, 'name', e.target.value)}
-                                    className={`w-full p-2.5 border rounded-lg text-sm focus:ring-1 focus:outline-none ${errors[`payer_${index}_name`] ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                                    className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black`}
                                     placeholder="Tên người thanh toán" 
                                 />
-                                {errors[`payer_${index}_name`] && <p className="text-xs text-red-500">{errors[`payer_${index}_name`]}</p>}
                             </div>
                             <div className="flex-1 space-y-1">
                                 <input 
                                     type="text" 
                                     value={payer.email} 
                                     onChange={e => handlePayerChange(index, 'email', e.target.value)}
-                                    className={`w-full p-2.5 border rounded-lg text-sm focus:ring-1 focus:outline-none ${errors[`payer_${index}_email`] ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                                    className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black`}
                                     placeholder="Email người thanh toán" 
                                 />
-                                {errors[`payer_${index}_email`] && <p className="text-xs text-red-500">{errors[`payer_${index}_email`]}</p>}
                             </div>
                         </div>
                     ))}
@@ -376,6 +373,8 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
         setSearchError('');
     };
 
+    const isFiltered = filters.type !== 'all' || filters.salesman !== 'all' || filters.source !== 'all' || filters.startDate !== '' || filters.endDate !== '';
+
     const filteredData = data.filter((c: Client) => {
         if (filters.type !== 'all' && c.type !== filters.type) return false;
         if (filters.salesman !== 'all') {
@@ -383,18 +382,25 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
              if (salesman?.full_name !== filters.salesman) return false;
         }
         if (filters.source !== 'all' && c.lead_source !== filters.source) return false;
-        if (filters.startDate && c.first_signed_date) {
-             const [d1, m1, y1] = c.first_signed_date.split('/');
-             const date = new Date(`${y1}-${m1}-${d1}`);
-             const start = new Date(filters.startDate);
-             if (date < start) return false;
+        
+        if (filters.startDate || filters.endDate) {
+             const date = parseDDMMYYYY(c.first_signed_date);
+             if (date) {
+                 if (filters.startDate) {
+                     const start = new Date(filters.startDate);
+                     start.setHours(0,0,0,0);
+                     if (date < start) return false;
+                 }
+                 if (filters.endDate) {
+                     const end = new Date(filters.endDate);
+                     end.setHours(23,59,59,999);
+                     if (date > end) return false;
+                 }
+             } else {
+                 return false;
+             }
         }
-         if (filters.endDate && c.first_signed_date) {
-             const [d1, m1, y1] = c.first_signed_date.split('/');
-             const date = new Date(`${y1}-${m1}-${d1}`);
-             const end = new Date(filters.endDate);
-             if (date > end) return false;
-        }
+
         if (filters.search) {
             const searchLower = filters.search.toLowerCase();
             if (!c.name.toLowerCase().includes(searchLower) && !c.code.toLowerCase().includes(searchLower)) {
@@ -411,28 +417,17 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
         <div className="p-6">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Quản lý khách hàng</h2>
-            
-            <div className="flex justify-between items-center gap-4 mb-4">
-                <div className="flex items-center gap-3 flex-1 max-w-2xl">
-                    <div className="relative w-full">
-                        <input 
-                            type="text" 
-                            placeholder="Tìm kiếm khách hàng ..." 
-                            className="w-full pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black" 
-                            value={filters.search} 
-                            onChange={(e) => handleFilterChange('search', e.target.value)} 
-                        />
-                    </div>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Quản lý khách hàng</h2>
+                <div className="flex items-center gap-3">
                     <div className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-medium text-slate-600 whitespace-nowrap">
                         {filteredData.length} khách hàng
                     </div>
+                    <button onClick={onAdd} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
+                        Thêm khách hàng
+                    </button>
                 </div>
-                <button onClick={onAdd} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
-                    Thêm khách hàng
-                </button>
             </div>
-            {searchError && <div className="text-red-500 text-xs mb-4">{searchError}</div>}
 
             <div className="flex flex-wrap items-center gap-3 mb-6">
                 <div className="p-2"><Filter size={20} className="text-slate-900" /></div>
@@ -461,13 +456,19 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
                     <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 </div>
 
-                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded px-3 py-1.5 hover:border-slate-300">
-                    <span className="text-xs text-slate-400">Tất cả thời gian</span>
-                    <CalendarIcon size={14} className="text-slate-400"/>
-                    <input type="date" className="text-xs text-slate-600 focus:outline-none w-4 bg-transparent opacity-0 absolute w-24 cursor-pointer" onChange={e => handleFilterChange('startDate', e.target.value)} />
+                <div className="w-auto">
+                    <DateRangePicker 
+                        startDate={filters.startDate} 
+                        endDate={filters.endDate} 
+                        onChange={(start, end) => {
+                            setFilters(prev => ({ ...prev, startDate: start, endDate: end }));
+                        }} 
+                    />
                 </div>
 
-                <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                {isFiltered && (
+                    <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-500 hover:bg-slate-50 transition-all">Xoá bộ lọc</button>
+                )}
                 
                 <div className="ml-auto">
                     <button onClick={() => alert("Đang tải xuống danh sách khách hàng...")} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-600 hover:bg-slate-50 flex items-center gap-2">
@@ -559,7 +560,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={onAddProject} className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Thêm dự án</button>
+                    <button onClick={() => onNavigate('/projects', { state: { createProjectForClient: client.id } })} className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Thêm dự án</button>
                     <button onClick={() => onEdit(client)} className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-slate-800">Chỉnh sửa</button>
                 </div>
             </div>
@@ -595,15 +596,15 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                     <div className="space-y-2">
                                         {client.payers && client.payers.length > 0 ? (
                                             client.payers.map((p: any, idx: number) => (
-                                                <div key={idx} className="flex justify-between text-xs">
-                                                    <span className="font-medium text-slate-900">{p.name}</span>
-                                                    <span className="text-slate-500">{p.email}</span>
+                                                <div key={idx} className="flex justify-between items-center text-sm border-b border-slate-50 last:border-0 py-1">
+                                                    <span className="font-bold text-slate-900">{p.name}</span>
+                                                    <span className="font-bold text-slate-900">{p.email}</span>
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="flex justify-between text-xs">
-                                                <span className="font-medium text-slate-900">{client.payer_name}</span>
-                                                <span className="text-slate-500">{client.payer_email}</span>
+                                            <div className="flex justify-between items-center text-sm border-b border-slate-50 last:border-0 py-1">
+                                                <span className="font-bold text-slate-900">{client.payer_name}</span>
+                                                <span className="font-bold text-slate-900">{client.payer_email}</span>
                                             </div>
                                         )}
                                     </div>
@@ -690,23 +691,23 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                      const pRevenue = pContracts.reduce((sum: number, c: Contract) => sum + c.total_value, 0);
 
                                      return (
-                                     <div key={p.id} className="border border-slate-200 rounded-lg p-5 flex justify-between items-start hover:bg-slate-50 transition-colors">
-                                         <div className="flex-1">
-                                             <div className="flex items-center gap-3 mb-2">
-                                                 <span className="font-bold text-slate-900 text-lg">{p.name}</span>
-                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${p.status_id === 2 ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'}`}>
-                                                     {p.status_id === 2 ? 'Đang triển khai' : 'Hoàn thành'}
-                                                 </span>
-                                             </div>
-                                             <div className="grid grid-cols-2 gap-y-1 text-sm text-slate-600 max-w-lg">
-                                                 <div>Mã dự án: <span className="font-medium text-slate-900">{p.code}</span></div>
-                                                 <div>Bộ phận phát triển: <span className="font-medium text-slate-900">{p.div_id || p.division}</span></div>
-                                                 <div>Doanh thu: <span className="font-medium text-slate-900">{pRevenue.toLocaleString()} {p.currency}</span></div>
-                                             </div>
+                                     <div key={p.id} className="border border-slate-200 rounded-xl p-6 bg-white hover:shadow-md transition-all">
+                                         <div className="flex justify-between items-start mb-4">
+                                             <span className="font-bold text-slate-900 text-lg">{p.name}</span>
+                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${p.status_id === 2 ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'}`}>
+                                                 {p.status_id === 2 ? 'Đang triển khai' : 'Hoàn thành'}
+                                             </span>
                                          </div>
-                                         <div className="text-right text-sm text-slate-600 space-y-1">
-                                             <div>Ngày bắt đầu: <span className="font-medium text-slate-900">{p.start_date}</span></div>
-                                             <div>Ngày kết thúc: <span className="font-medium text-slate-900">{p.end_date}</span></div>
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-slate-700">
+                                             <div className="space-y-2">
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Mã dự án:</span> <span>{p.code}</span></div>
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Bộ phận phát triển:</span> <span>{p.div_id || p.division}</span></div>
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Doanh thu:</span> <span>{pRevenue.toLocaleString()} {p.currency}</span></div>
+                                             </div>
+                                             <div className="space-y-2">
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Ngày bắt đầu:</span> <span>{p.start_date}</span></div>
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Ngày kết thúc:</span> <span>{p.end_date}</span></div>
+                                             </div>
                                          </div>
                                      </div>
                                  )})}
@@ -717,7 +718,6 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                          {activeTab === 'contracts' && (
                              <div className="space-y-4">
                                  {clientContracts.map((c: Contract) => {
-                                     // Logic check status for badge
                                      let statusLabel = 'Dự kiến';
                                      if (c.status_id === 1) statusLabel = 'Đang trao đổi';
                                      else if (c.status_id === 2) {

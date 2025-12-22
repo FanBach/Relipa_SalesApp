@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Filter, Calendar as CalendarIcon, ChevronDown, ChevronRight, Download, ImageIcon } from 'lucide-react';
 import { Invoice, Project, Client, Contract, InvoiceNote, BankStatement } from '../types';
-import { StatusBadge, FormHeader } from './Shared';
+import { StatusBadge, FormHeader, DateRangePicker, parseDDMMYYYY } from './Shared';
 
 export const InvoiceForm = ({ initialData, projects, clients, contracts, onBack, onSave }: any) => {
     const [formData, setFormData] = useState<Partial<Invoice>>(initialData || {
@@ -565,13 +565,37 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
         status: 'all',
         client: 'all',
         project: 'all',
-        dateRange: ''
+        dateRange: '',
+        startDate: '',
+        endDate: ''
     });
 
     const filteredInvoices = data.filter((i: Invoice) => {
         if (invoiceFilters.search && !i.invoice_no.toLowerCase().includes(invoiceFilters.search.toLowerCase())) return false;
+        
+        // Date Filter Logic for Issue Date
+        if (invoiceFilters.startDate || invoiceFilters.endDate) {
+            const date = parseDDMMYYYY(i.issue_date);
+            if (date) {
+                if (invoiceFilters.startDate) {
+                    const start = new Date(invoiceFilters.startDate);
+                    start.setHours(0,0,0,0);
+                    if (date < start) return false;
+                }
+                if (invoiceFilters.endDate) {
+                    const end = new Date(invoiceFilters.endDate);
+                    end.setHours(23,59,59,999);
+                    if (date > end) return false;
+                }
+            } else {
+                return false; 
+            }
+        }
+
         return true;
     });
+
+    const isInvoiceFiltered = invoiceFilters.status !== 'all' || invoiceFilters.client !== 'all' || invoiceFilters.project !== 'all' || invoiceFilters.startDate !== '' || invoiceFilters.endDate !== '';
 
     const [statementFilters, setStatementFilters] = useState({
         search: '',
@@ -579,7 +603,9 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
         objectCode: 'all',
         objectName: 'all',
         value: 'all',
-        time: 'all'
+        time: 'all',
+        startDate: '',
+        endDate: ''
     });
 
     const filteredStatements = statements ? statements.filter((s: BankStatement) => {
@@ -590,8 +616,30 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
             }
         }
         if (statementFilters.status !== 'all' && s.status !== statementFilters.status) return false;
+        
+        // Date Filter Logic for Document Date
+        if (statementFilters.startDate || statementFilters.endDate) {
+            const date = parseDDMMYYYY(s.document_date);
+            if (date) {
+                if (statementFilters.startDate) {
+                    const start = new Date(statementFilters.startDate);
+                    start.setHours(0,0,0,0);
+                    if (date < start) return false;
+                }
+                if (statementFilters.endDate) {
+                    const end = new Date(statementFilters.endDate);
+                    end.setHours(23,59,59,999);
+                    if (date > end) return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
         return true;
     }) : [];
+
+    const isStatementFiltered = statementFilters.status !== 'all' || statementFilters.startDate !== '' || statementFilters.endDate !== '';
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
@@ -614,7 +662,7 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
                 {viewMode === 'list' ? (
                     <>
                         <div className="flex justify-between items-center gap-4 mb-6">
-                            <div className="relative flex-1 max-w-sm">
+                            <div className="relative flex-1 max-sm">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                                 <input 
                                     type="text" 
@@ -658,12 +706,18 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
                                 </select>
                                 <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             </div>
-                            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 hover:border-slate-300 cursor-pointer">
-                                <span className="text-xs text-slate-400">Tất cả thời gian</span>
-                                <CalendarIcon size={14} className="text-slate-400"/>
+                            
+                            <div className="w-auto">
+                                <DateRangePicker 
+                                    startDate={invoiceFilters.startDate} 
+                                    endDate={invoiceFilters.endDate} 
+                                    onChange={(start, end) => setInvoiceFilters(prev => ({ ...prev, startDate: start, endDate: end }))} 
+                                />
                             </div>
 
-                            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                            {isInvoiceFiltered && (
+                                <button onClick={() => setInvoiceFilters({search: '', status: 'all', client: 'all', project: 'all', dateRange: '', startDate: '', endDate: ''})} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50 transition-all animate-fade-in">Xoá bộ lọc</button>
+                            )}
                             <div className="ml-auto"><button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-50">Tải xuống</button></div>
                         </div>
 
@@ -764,12 +818,18 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
                                 </select>
                                 <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             </div>
-                            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 hover:border-slate-300 cursor-pointer">
-                                <span className="text-xs text-slate-400">Tất cả thời gian</span>
-                                <CalendarIcon size={14} className="text-slate-400"/>
+                            
+                            <div className="w-auto">
+                                <DateRangePicker 
+                                    startDate={statementFilters.startDate} 
+                                    endDate={statementFilters.endDate} 
+                                    onChange={(start, end) => setStatementFilters(prev => ({ ...prev, startDate: start, endDate: end }))} 
+                                />
                             </div>
 
-                            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                            {isStatementFiltered && (
+                                <button onClick={() => setStatementFilters(prev => ({...prev, status: 'all', startDate: '', endDate: ''}))} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50 transition-all animate-fade-in">Xoá bộ lọc</button>
+                            )}
                             <div className="ml-auto"><button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-50">Tải xuống</button></div>
                         </div>
 
@@ -814,7 +874,7 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
                                                                 'bg-orange-100 text-orange-700'
                                                             }`}
                                                             value={s.status}
-                                                            onChange={(e) => { e.stopPropagation(); /* Handle status change */}}
+                                                            onChange={(e) => { e.stopPropagation(); }}
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
                                                             <option value="Chưa duyệt">Chưa duyệt</option>

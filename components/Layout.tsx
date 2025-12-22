@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Briefcase, FileText, FileBarChart, PieChart, Calculator, User as UserIcon, Settings, LogOut, Menu, Search, Bell, ArrowLeft, Sun, Moon, ShieldCheck } from 'lucide-react';
@@ -13,16 +14,8 @@ export const Header = ({ setSidebarOpen, unreadCount, darkMode, toggleDarkMode }
             <Menu size={20} />
           </button>
 
-          <div className="flex-1 max-w-xl mx-4 lg:mx-0">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input 
-                type="text" 
-                placeholder="Tìm kiếm..." 
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-slate-500 focus:bg-white dark:focus:bg-slate-800 transition-all dark:text-white dark:placeholder-slate-400"
-              />
-            </div>
-          </div>
+          {/* Thanh tìm kiếm đã được loại bỏ tại đây theo yêu cầu */}
+          <div className="flex-1"></div>
 
           <div className="flex items-center gap-4">
             <button 
@@ -59,7 +52,6 @@ export const Sidebar = ({ isOpen, currentUser }: { isOpen: boolean, currentUser:
   ];
 
   const settingsItems = [
-      // UC Logic: Show only if Super Admin
       ...(isSuperAdmin ? [{ icon: UserIcon, label: "Tài khoản", path: "/accounts" }] : []),
       { icon: ShieldCheck, label: "Phân quyền", path: "/permissions" },
       { icon: Settings, label: "Master", path: "/settings" } 

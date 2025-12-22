@@ -3,24 +3,24 @@ import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Search, Filter, Calendar as CalendarIcon, ChevronDown, ChevronRight, Download, X, Plus } from 'lucide-react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Project, Client, Contract, Invoice, ChangeLog, MonthlyData } from '../types';
-import { StatusBadge, FormHeader } from './Shared';
+import { StatusBadge, FormHeader, DateRangePicker, parseDDMMYYYY } from './Shared';
 import { getMockData } from '../services/mockData';
 
 // --- TRANG THÊM/SỬA DỰ ÁN (S004 - Add new & Edit) ---
 export const ProjectForm = ({ initialData, clients, onBack, onSave }: any) => {
-    const [formData, setFormData] = useState<Partial<Project>>(initialData || {
-        code: '',
+    const defaultData = {
+        code: `PRJ-${Math.floor(1000 + Math.random() * 9000)}`,
         name: '',
-        client_id: undefined,
-        technology: '',
-        division: '',
+        client_id: clients[0]?.id,
+        technology: 'Web',
+        division: 'Division 1',
         start_date: '',
         end_date: '',
-        description: '',
-        man_month: 0,
-        expected_revenue: 0,
-        currency: 'USD'
-    });
+        status_id: 2,
+        description: ''
+    };
+
+    const [formData, setFormData] = useState<Partial<Project>>({ ...defaultData, ...initialData });
 
     const handleChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -154,15 +154,42 @@ export const ProjectForm = ({ initialData, clients, onBack, onSave }: any) => {
 
 // --- TRANG DANH SÁCH DỰ ÁN (S004 - View list) ---
 export const ProjectsModule = ({ data, clients, onAdd, onViewDetail }: any) => {
-    const [filters, setFilters] = useState({ search: '', status: 'Tất cả', tech: 'Tất cả', div: 'Tất cả' });
+    const [filters, setFilters] = useState({ search: '', status: 'Tất cả', tech: 'Tất cả', div: 'Tất cả', startDate: '', endDate: '' });
     
     const filteredData = useMemo(() => {
         return data.filter((p: Project) => {
             const matchesSearch = !filters.search || p.name.toLowerCase().includes(filters.search.toLowerCase());
             const matchesDiv = filters.div === 'Tất cả' || p.division === filters.div;
-            return matchesSearch && matchesDiv;
+            const matchesStatus = filters.status === 'Tất cả' || (filters.status === 'Đang thực hiện' ? p.status_id === 2 : p.status_id !== 2);
+            const matchesTech = filters.tech === 'Tất cả' || p.technology === filters.tech;
+
+            let matchesDate = true;
+            if (filters.startDate || filters.endDate) {
+                const date = parseDDMMYYYY(p.start_date);
+                if (date) {
+                    if (filters.startDate) {
+                        const start = new Date(filters.startDate);
+                        start.setHours(0,0,0,0);
+                        if (date < start) matchesDate = false;
+                    }
+                    if (filters.endDate) {
+                        const end = new Date(filters.endDate);
+                        end.setHours(23,59,59,999);
+                        if (date > end) matchesDate = false;
+                    }
+                } else {
+                    matchesDate = false;
+                }
+            }
+
+            return matchesSearch && matchesDiv && matchesStatus && matchesTech && matchesDate;
         }).sort((a: any, b: any) => b.id - a.id);
     }, [data, filters]);
+
+    // Kiểm tra xem bộ lọc có khác mặc định không (không tính ô tìm kiếm)
+    const isFiltered = filters.status !== 'Tất cả' || filters.tech !== 'Tất cả' || filters.div !== 'Tất cả' || filters.startDate !== '' || filters.endDate !== '';
+
+    const clearFilters = () => setFilters({ search: '', status: 'Tất cả', tech: 'Tất cả', div: 'Tất cả', startDate: '', endDate: '' });
 
     const formatVN = (dateStr: string) => {
         if (!dateStr) return '-';
@@ -173,8 +200,18 @@ export const ProjectsModule = ({ data, clients, onAdd, onViewDetail }: any) => {
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[85vh] p-8 animate-fade-in">
-            <h2 className="text-2xl font-bold text-slate-900 mb-8 tracking-tight">Quản lý dự án</h2>
-            
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Quản lý dự án</h2>
+                <div className="flex items-center gap-3">
+                    <div className="px-5 py-2.5 bg-slate-100 rounded-lg text-sm font-bold text-slate-500 whitespace-nowrap">
+                        {filteredData.length} dự án
+                    </div>
+                    <button onClick={onAdd} className="bg-black text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-800 transition-all shadow-md">
+                        Thêm dự án
+                    </button>
+                </div>
+            </div>
+
             <div className="flex justify-between items-center gap-4 mb-6">
                 <div className="flex items-center gap-4 flex-1 max-w-2xl">
                     <div className="relative flex-1">
@@ -182,41 +219,60 @@ export const ProjectsModule = ({ data, clients, onAdd, onViewDetail }: any) => {
                         <input 
                             type="text" 
                             placeholder="Tìm kiếm dự án ..." 
-                            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black transition-all" 
+                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black transition-all" 
                             value={filters.search} 
                             onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))} 
                         />
                     </div>
-                    <div className="px-5 py-2.5 bg-slate-100 rounded-lg text-sm font-bold text-slate-500 whitespace-nowrap">
-                        {filteredData.length} dự án
-                    </div>
                 </div>
-                <button onClick={onAdd} className="bg-black text-white px-8 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-800 transition-all shadow-md">
-                    Thêm dự án
-                </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 mb-10">
                 <div className="p-2 text-slate-900"><Filter size={20} strokeWidth={2.5} /></div>
                 
-                <select className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all">
+                <select 
+                    value={filters.status} 
+                    onChange={e => setFilters({...filters, status: e.target.value})}
+                    className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all"
+                >
                     <option>Trạng thái</option>
+                    <option>Đang thực hiện</option>
+                    <option>Hoàn thành</option>
                 </select>
 
-                <select className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all">
+                <select 
+                    value={filters.tech}
+                    onChange={e => setFilters({...filters, tech: e.target.value})}
+                    className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all"
+                >
                     <option>Công nghệ</option>
+                    <option>Blockchain</option>
+                    <option>AI</option>
+                    <option>Web</option>
                 </select>
 
-                <select className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all">
+                <select 
+                    value={filters.div}
+                    onChange={e => setFilters({...filters, div: e.target.value})}
+                    className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 outline-none hover:border-slate-300 bg-white cursor-pointer transition-all"
+                >
                     <option>Bộ phận</option>
+                    <option>Division 1</option>
+                    <option>Division 2</option>
+                    <option>Global</option>
                 </select>
 
-                <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-1.5 hover:border-slate-300 cursor-pointer transition-all">
-                    <span className="text-xs font-bold text-slate-500">Tất cả thời gian</span>
-                    <CalendarIcon size={14} className="text-slate-400"/>
+                <div className="w-auto">
+                    <DateRangePicker 
+                        startDate={filters.startDate} 
+                        endDate={filters.endDate} 
+                        onChange={(start, end) => setFilters(prev => ({ ...prev, startDate: start, endDate: end }))} 
+                    />
                 </div>
 
-                <button className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50 transition-colors">Xoá bộ lọc</button>
+                {isFiltered && (
+                    <button onClick={clearFilters} className="px-4 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50 transition-all animate-fade-in">Xoá bộ lọc</button>
+                )}
                 
                 <div className="ml-auto">
                     <button className="px-6 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors">
@@ -430,50 +486,20 @@ export const ProjectDetailView = ({ project, onBack, onEdit, onNavigate }: any) 
 
                     {activeTab === 'history' && (
                         <div className="space-y-8 py-2">
-                            {/* Card Item 1 (#37 - #41) */}
                             <div className="border border-slate-200 rounded-xl p-6 bg-white shadow-sm transition-all hover:border-slate-300">
                                 <div className="font-bold text-slate-900 mb-6 flex items-center gap-3">
                                     Thay đổi thông tin: Địa chỉ 
                                     <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                                 </div>
-                                
-                                <div className="space-y-3 mb-8">
-                                    <div className="text-sm">
-                                        <p className="font-medium text-slate-700">Trước thay đổi:</p>
-                                    </div>
-                                    <div className="text-sm">
-                                        <p className="font-medium text-slate-700">Sau thay đổi:</p>
-                                    </div>
+                                <div className="space-y-3 mb-8 text-sm">
+                                    <div><p className="font-medium text-slate-700">Trước thay đổi:</p></div>
+                                    <div><p className="font-medium text-slate-700">Sau thay đổi:</p></div>
                                 </div>
-
-                                <div className="text-sm text-slate-500 font-medium">
-                                    Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024
-                                </div>
+                                <div className="text-sm text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
                             </div>
-
-                            {/* Card Item 2 (#42 - #44) */}
                             <div className="border border-slate-200 rounded-xl p-6 bg-white shadow-sm transition-all hover:border-slate-300">
-                                <div className="font-bold text-slate-900 mb-6 uppercase text-sm tracking-wide">
-                                    Tạo mới
-                                </div>
-                                
-                                <div className="text-sm text-slate-500 font-medium">
-                                    Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024
-                                </div>
-                            </div>
-
-                            {/* Pagination (#45) */}
-                            <div className="flex justify-center items-center gap-3 pt-10">
-                                <button className="p-1 hover:text-black text-slate-400 transition-colors">
-                                    <ChevronDown className="rotate-90" size={18}/>
-                                </button>
-                                <button className="w-8 h-8 flex items-center justify-center border border-black bg-slate-100 rounded text-xs font-bold text-slate-900">1</button>
-                                <button className="w-8 h-8 flex items-center justify-center text-xs font-medium text-slate-500 hover:text-black">2</button>
-                                <span className="flex items-center px-1 text-slate-300 font-medium">...</span>
-                                <button className="w-8 h-8 flex items-center justify-center text-xs font-medium text-slate-500 hover:text-black">10</button>
-                                <button className="p-1 hover:text-black text-slate-400 transition-colors">
-                                    <ChevronRight size={18}/>
-                                </button>
+                                <div className="font-bold text-slate-900 mb-6 uppercase text-sm tracking-wide">Tạo mới</div>
+                                <div className="text-sm text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
                             </div>
                         </div>
                     )}

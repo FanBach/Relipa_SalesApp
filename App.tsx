@@ -47,9 +47,17 @@ const AppContent = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    setViewMode('list');
-    setSelectedItem(null);
-  }, [location.pathname]);
+    // Check if we are navigating with a specific intent via state
+    const state = location.state as any;
+    if (state?.createProjectForClient && location.pathname === '/projects') {
+        setViewMode('form');
+        // Pass the client_id as initialData
+        setSelectedItem({ client_id: state.createProjectForClient });
+    } else {
+        setViewMode('list');
+        setSelectedItem(null);
+    }
+  }, [location.pathname, location.state]);
 
   if (!isLoggedIn) return <LoginScreen onLogin={() => setIsLoggedIn(true)} />;
 
