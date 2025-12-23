@@ -798,20 +798,31 @@ export const ContractDetailView = ({ contract, project, invoices = [], onBack, o
                         </div>
                     )}
                     {activeTab === 'history' && (
-                        <div className="space-y-8 animate-fade-in py-2 max-w-5xl mx-auto">
-                            <div className="border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 bg-white dark:bg-slate-800 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-500">
-                                <div className="font-black text-slate-900 dark:text-white text-lg mb-8 flex items-center gap-3 uppercase tracking-tight">Thay đổi thông tin: Địa chỉ</div>
-                                <div className="space-y-4 mb-10 pl-2">
-                                    <div className="text-sm border-l-4 border-slate-100 dark:border-slate-700 pl-4 py-1"><p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Trước thay đổi:</p><p className="font-medium text-slate-500 dark:text-slate-400 italic">-</p></div>
-                                    <div className="text-sm border-l-4 border-slate-900 dark:border-slate-400 pl-4 py-1"><p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Sau thay đổi:</p><p className="font-black text-slate-900 dark:text-white">Hanoi, Vietnam</p></div>
+                        <div className="space-y-6 max-w-3xl">
+                             {/* Mock Item 1 */}
+                             <div className="flex gap-4">
+                                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex-1 bg-white dark:bg-slate-800">
+                                    <div className="font-bold text-sm mb-2 flex items-center gap-2 text-slate-900 dark:text-white">
+                                        Thay đổi thông tin: Địa chỉ
+                                    </div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Trước thay đổi: -</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">Sau thay đổi: Hanoi, Vietnam</div>
+                                    <div className="text-[10px] text-slate-400 dark:text-slate-500">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
                                 </div>
-                                <div className="text-xs text-slate-400 dark:text-slate-500 font-bold italic pt-6 border-t border-slate-50 dark:border-slate-700 flex items-center gap-2"><Clock size={12} /> Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
-                            </div>
+                             </div>
+
+                             {/* Mock Item 2 */}
+                             <div className="flex gap-4">
+                                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex-1 bg-white dark:bg-slate-800">
+                                    <div className="font-bold text-sm mb-1 text-slate-900 dark:text-white">Tạo mới</div>
+                                    <div className="text-[10px] text-slate-400 dark:text-slate-500">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                </div>
+                             </div>
                         </div>
                     )}
                 </div>
             </div>
-            <RequestStartModal isOpen={isRequestModalOpen} onClose={() => setIsRequestModalOpen(false)} contract={activeContract} project={project} />
+            <RequestStartModal isOpen={isRequestModalOpen} onClose={() => setIsRequestModalOpen(false)} contract={contract} project={project} />
         </div>
     );
 };

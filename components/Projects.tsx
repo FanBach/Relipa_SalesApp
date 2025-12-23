@@ -532,29 +532,50 @@ export const ProjectDetailView = ({ project, onBack, onEdit, onNavigate }: any) 
                     )}
 
                     {activeTab === 'revenue' && (
-                        <div className="p-6 h-[500px]">
+                        <div className="h-[450px] w-full pt-10">
                              <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={[
-                                    {name: '01/2024', rev: 350000, mm: 1.5},
-                                    {name: '02/2024', rev: 400000, mm: 1.8},
-                                    {name: '03/2024', rev: 300000, mm: 1.2},
-                                    {name: '04/2024', rev: 450000, mm: 2.1},
-                                    {name: '05/2024', rev: 500000, mm: 2.0},
-                                    {name: '06/2024', rev: 420000, mm: 1.9},
-                                ]}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                                    <XAxis dataKey="name" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} dy={10} stroke="#94a3b8" />
-                                    {/* Primary Y-Axis for Revenue (Bar) */}
-                                    <YAxis yAxisId="left" hide />
-                                    {/* Secondary Y-Axis for Man-month (Line) */}
-                                    <YAxis yAxisId="right" orientation="right" hide />
-                                    <RechartsTooltip 
-                                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', color: '#fff' }}
-                                        itemStyle={{ color: '#fff' }}
+                                    {name: '2/2024', revenue: 300000, mm: 1.0},
+                                    {name: '3/2024', revenue: 420000, mm: 1.2},
+                                    {name: '4/2024', revenue: 550000, mm: 1.5},
+                                    {name: '5/2024', revenue: 500000, mm: 2.0},
+                                    {name: '6/2024', revenue: 600000, mm: 2.5},
+                                ]} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                                    {/* XAxis with specific line style */}
+                                    <XAxis 
+                                        dataKey="name" 
+                                        axisLine={{ stroke: '#64748b', strokeWidth: 1 }} 
+                                        tickLine={false} 
+                                        tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600, dy: 10 }} 
+                                        padding={{ left: 20, right: 20 }}
                                     />
-                                    {/* Assign Y-Axis IDs */}
-                                    <Bar yAxisId="left" dataKey="revenue" fill="#cbd5e1" barSize={40} radius={[4, 4, 0, 0]} />
-                                    <Line yAxisId="right" type="monotone" dataKey="mm" stroke="#000" strokeWidth={3} dot={{ r: 4, fill: '#000', strokeWidth: 2, stroke: '#fff' }} />
+                                    {/* Hidden Y-Axis but controlling domain/scale */}
+                                    <YAxis yAxisId="left" hide />
+                                    <YAxis yAxisId="right" orientation="right" hide domain={[0, 4]} />
+                                    
+                                    <RechartsTooltip 
+                                        cursor={{fill: 'transparent'}} 
+                                        content={({ active, payload, label }) => {
+                                            if (active && payload && payload.length) {
+                                                return (
+                                                    <div className="bg-slate-600/90 text-white p-4 rounded-xl shadow-xl backdrop-blur-sm min-w-[150px]">
+                                                        <p className="text-xs font-bold text-white/70 mb-2 uppercase tracking-wide">{label}</p>
+                                                        <p className="text-xl font-bold text-white mb-1">
+                                                            {Number(payload[0].value).toLocaleString()} US$
+                                                        </p>
+                                                        <p className="text-sm font-bold text-white">
+                                                            {payload[1].value} man-month
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    {/* Bar for Revenue - Light Gray */}
+                                    <Bar yAxisId="left" dataKey="revenue" fill="#e2e8f0" barSize={60} radius={[0, 0, 0, 0]} />
+                                    {/* Line for Man-month - Dark Gray, linear/straight, small dot */}
+                                    <Line yAxisId="right" type="linear" dataKey="mm" stroke="#334155" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#334155', stroke: '#fff', strokeWidth: 2 }} />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>

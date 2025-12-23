@@ -809,9 +809,6 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                              <div className="space-y-6 max-w-3xl">
                                 {changeLogs.length > 0 ? changeLogs.map((log: ChangeLog) => (
                                     <div key={log.id} className="flex gap-4">
-                                        <div className="flex flex-col items-center pt-1">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                                        </div>
                                         <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex-1">
                                             {log.action_type === 'create' ? (
                                                 <>
@@ -833,9 +830,6 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                 )) : (
                                     <>
                                         <div className="flex gap-4">
-                                            <div className="flex flex-col items-center pt-1">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                                            </div>
                                             <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex-1">
                                                 <div className="font-bold text-sm mb-2 flex items-center gap-2 text-slate-900 dark:text-white">
                                                     Thay đổi thông tin: Địa chỉ
@@ -846,9 +840,6 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
-                                            <div className="flex flex-col items-center pt-1">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                                            </div>
                                             <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex-1">
                                                 <div className="font-bold text-sm mb-1 text-slate-900 dark:text-white">Tạo mới</div>
                                                 <div className="text-[10px] text-slate-400">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
