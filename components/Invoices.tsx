@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, Calendar as CalendarIcon, ChevronDown, ChevronRight, Download, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Calendar as CalendarIcon, ChevronDown, ChevronRight, Download, ImageIcon, FileText, Upload, FileUp, FileDown, Clock } from 'lucide-react';
 import { Invoice, Project, Client, Contract, InvoiceNote, BankStatement } from '../types';
 import { StatusBadge, FormHeader, DateRangePicker, parseDDMMYYYY } from './Shared';
 import { useLocation } from 'react-router-dom';
@@ -147,202 +147,27 @@ export const InvoiceForm = ({ initialData, projects, clients, contracts, onBack,
                         </select>
                         {errors.project_id && <p className="text-xs text-red-500">{errors.project_id}</p>}
                     </div>
-
                     <div className="space-y-1">
                         <label className="text-sm font-bold text-slate-900 dark:text-white">Khách hàng <span className="text-red-500">*</span></label>
-                        <select 
-                            value={formData.client_id || ''} 
-                            onChange={e => handleChange('client_id', Number(e.target.value))} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.client_id ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'} ${!formData.client_id ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
-                        >
-                            <option value="" disabled hidden>Chọn khách hàng</option>
-                            {clients.map((c: Client) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                        {errors.client_id && <p className="text-xs text-red-500">{errors.client_id}</p>}
+                        <select value={formData.client_id || ''} onChange={e => handleChange('client_id', Number(e.target.value))} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"><option value="">Chọn khách hàng</option>{clients.map((c: Client) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
                     </div>
-
                     <div className="space-y-1">
                         <label className="text-sm font-bold text-slate-900 dark:text-white">Hợp đồng <span className="text-red-500">*</span></label>
-                        <select 
-                            value={formData.contract_id || ''} 
-                            onChange={e => handleContractChange(Number(e.target.value))} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.contract_id ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'} ${!formData.contract_id ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
-                        >
-                            <option value="" disabled hidden>Chọn hợp đồng</option>
-                            {availableContracts.map((c: Contract) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
-                        </select>
-                        {errors.contract_id && <p className="text-xs text-red-500">{errors.contract_id}</p>}
+                        <select value={formData.contract_id || ''} onChange={e => handleContractChange(Number(e.target.value))} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"><option value="">Chọn hợp đồng</option>{availableContracts.map((c: Contract) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}</select>
                     </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Mã hoá đơn <span className="text-red-500">*</span></label>
-                        <div className="flex gap-2">
-                            <input 
-                                type="text" 
-                                value={formData.invoice_no} 
-                                onChange={e => handleChange('invoice_no', e.target.value)} 
-                                className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
-                                placeholder="Mã hoá đơn"
-                            />
-                            <button 
-                                onClick={generateInvoiceCode}
-                                className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap"
-                            >
-                                Tự động
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Pháp nhân <span className="text-red-500">*</span></label>
-                        <select 
-                            value={formData.legal_entity || ''} 
-                            onChange={e => handleChange('legal_entity', e.target.value)} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.legal_entity ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'} ${!formData.legal_entity ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
-                        >
-                            <option value="" disabled hidden>Chọn pháp nhân</option>
-                            <option value="Relipa VN" className="text-slate-900 dark:text-white">Relipa VN</option>
-                            <option value="Relipa JP" className="text-slate-900 dark:text-white">Relipa JP</option>
-                            <option value="Relipa Global" className="text-slate-900 dark:text-white">Relipa Global</option>
-                        </select>
-                        {errors.legal_entity && <p className="text-xs text-red-500">{errors.legal_entity}</p>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Ngày xuất <span className="text-red-500">*</span></label>
-                        <input 
-                            type="date" 
-                            value={formData.issue_date} 
-                            onClick={(e) => e.currentTarget.showPicker()}
-                            onChange={e => handleChange('issue_date', e.target.value)} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.issue_date ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'} ${!formData.issue_date ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
-                        />
-                        {errors.issue_date && <p className="text-xs text-red-500">{errors.issue_date}</p>}
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Ngày đến hạn <span className="text-red-500">*</span></label>
-                        <input 
-                            type="date" 
-                            value={formData.due_date} 
-                            onClick={(e) => e.currentTarget.showPicker()}
-                            onChange={e => handleChange('due_date', e.target.value)} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.due_date ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'} ${!formData.due_date ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
-                        />
-                        {errors.due_date && <p className="text-xs text-red-500">{errors.due_date}</p>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Đơn vị tiền <span className="text-red-500">*</span></label>
-                        <select 
-                            value={formData.currency || 'USD'} 
-                            onChange={e => handleChange('currency', e.target.value)} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.currency ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'}`}
-                        >
-                            <option value="USD">USD</option>
-                            <option value="JPY">JPY</option>
-                            <option value="VND">VND</option>
-                        </select>
-                        {errors.currency && <p className="text-xs text-red-500">{errors.currency}</p>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Giá trị theo hợp đồng <span className="text-red-500">*</span></label>
-                        <div className="flex gap-2">
-                            <input 
-                                type="number" 
-                                value={formData.contract_value} 
-                                onChange={e => handleChange('contract_value', Number(e.target.value))} 
-                                className={`flex-1 p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.contract_value ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'}`}
-                            />
-                            <div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center text-slate-600 dark:text-slate-300">{formData.currency}</div>
-                        </div>
-                        {errors.contract_value && <p className="text-xs text-red-500">{errors.contract_value}</p>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Giảm trừ công số <span className="text-red-500">*</span></label>
-                        <div className="flex gap-2">
-                            <input 
-                                type="number" 
-                                value={formData.deduction} 
-                                onChange={e => handleChange('deduction', Number(e.target.value))} 
-                                className={`flex-1 p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.deduction ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'}`}
-                            />
-                            <div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center text-slate-600 dark:text-slate-300">{formData.currency}</div>
-                        </div>
-                        {errors.deduction && <p className="text-xs text-red-500">{errors.deduction}</p>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Giá trị trước VAT <span className="text-red-500">*</span></label>
-                        <div className="flex gap-2">
-                            <input 
-                                type="number" 
-                                value={formData.subtotal} 
-                                readOnly 
-                                className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm focus:outline-none text-slate-700 dark:text-white"
-                            />
-                            <div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center text-slate-600 dark:text-slate-300">{formData.currency}</div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Giá trị sau VAT <span className="text-red-500">*</span></label>
-                        <div className="flex gap-2">
-                            <input 
-                                type="number" 
-                                value={formData.total_amount} 
-                                onChange={e => handleChange('total_amount', Number(e.target.value))} 
-                                className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white dark:bg-slate-700 dark:text-white"
-                            />
-                            <div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center text-slate-600 dark:text-slate-300">{formData.currency}</div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Tỉ giá (VNĐ) <span className="text-red-500">*</span></label>
-                        <input 
-                            type="number" 
-                            value={formData.exchange_rate} 
-                            onChange={e => handleChange('exchange_rate', Number(e.target.value))} 
-                            className="w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white dark:bg-slate-700 dark:text-white"
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Nội dung xuất hoá đơn (VN) <span className="text-red-500">*</span></label>
-                        <textarea 
-                            value={formData.content_vn} 
-                            onChange={e => handleChange('content_vn', e.target.value)} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 h-24 resize-none dark:bg-slate-700 dark:text-white ${errors.content_vn ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'}`}
-                        ></textarea>
-                        {errors.content_vn && <p className="text-xs text-red-500">{errors.content_vn}</p>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Nội dung xuất hoá đơn (JP) <span className="text-red-500">*</span></label>
-                        <textarea 
-                            value={formData.content_jp} 
-                            onChange={e => handleChange('content_jp', e.target.value)} 
-                            className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 h-24 resize-none dark:bg-slate-700 dark:text-white ${errors.content_jp ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'}`}
-                        ></textarea>
-                        {errors.content_jp && <p className="text-xs text-red-500">{errors.content_jp}</p>}
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-sm font-bold text-slate-900 dark:text-white">Trạng thái <span className="text-red-500">*</span></label>
-                        <select 
-                            value={formData.status_id} 
-                            onChange={e => handleChange('status_id', Number(e.target.value))} 
-                            className="w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white dark:bg-slate-700 dark:text-white"
-                        >
-                            <option value={1}>Đã tạo</option>
-                            <option value={2}>Đã gửi</option>
-                            <option value={3}>Đã thanh toán</option>
-                            <option value={4}>Quá hạn</option>
-                            <option value={5}>Đã huỷ</option>
-                        </select>
-                    </div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Mã hoá đơn <span className="text-red-500">*</span></label><div className="flex gap-2"><input type="text" value={formData.invoice_no} onChange={e => handleChange('invoice_no', e.target.value)} className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" /><button onClick={generateInvoiceCode} className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Tự động</button></div></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Pháp nhân <span className="text-red-500">*</span></label><select value={formData.legal_entity || ''} onChange={e => handleChange('legal_entity', e.target.value)} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"><option value="">Chọn pháp nhân</option><option value="Relipa VN">Relipa VN</option><option value="Relipa JP">Relipa JP</option><option value="Relipa Global">Relipa Global</option></select></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Ngày xuất <span className="text-red-500">*</span></label><input type="date" value={formData.issue_date} onChange={e => handleChange('issue_date', e.target.value)} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" /></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Ngày đến hạn <span className="text-red-500">*</span></label><input type="date" value={formData.due_date} onChange={e => handleChange('due_date', e.target.value)} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" /></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Đơn vị tiền <span className="text-red-500">*</span></label><select value={formData.currency || 'USD'} onChange={e => handleChange('currency', e.target.value)} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"><option value="USD">USD</option><option value="JPY">JPY</option><option value="VND">VND</option></select></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Giá trị theo hợp đồng <span className="text-red-500">*</span></label><div className="flex gap-2"><input type="number" value={formData.contract_value} onChange={e => handleChange('contract_value', Number(e.target.value))} className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm" /><div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center">{formData.currency}</div></div></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Giảm trừ công số <span className="text-red-500">*</span></label><div className="flex gap-2"><input type="number" value={formData.deduction} onChange={e => handleChange('deduction', Number(e.target.value))} className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm" /><div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center">{formData.currency}</div></div></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Giá trị trước VAT <span className="text-red-500">*</span></label><div className="flex gap-2"><input type="number" value={formData.subtotal} readOnly className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 dark:text-white rounded-lg text-sm" /><div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center">{formData.currency}</div></div></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Giá trị sau VAT <span className="text-red-500">*</span></label><div className="flex gap-2"><input type="number" value={formData.total_amount} onChange={e => handleChange('total_amount', Number(e.target.value))} className="flex-1 p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm" /><div className="w-16 p-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center">{formData.currency}</div></div></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Tỉ giá (VNĐ) <span className="text-red-500">*</span></label><input type="number" value={formData.exchange_rate} onChange={e => handleChange('exchange_rate', Number(e.target.value))} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm" /></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Nội dung xuất hoá đơn (VN) <span className="text-red-500">*</span></label><textarea value={formData.content_vn} onChange={e => handleChange('content_vn', e.target.value)} className="w-full p-2.5 border rounded-lg text-sm h-24 resize-none border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white"></textarea></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Nội dung xuất hoá đơn (JP) <span className="text-red-500">*</span></label><textarea value={formData.content_jp} onChange={e => handleChange('content_jp', e.target.value)} className="w-full p-2.5 border rounded-lg text-sm h-24 resize-none border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white"></textarea></div>
+                    <div className="space-y-1"><label className="text-sm font-bold text-slate-900 dark:text-white">Trạng thái <span className="text-red-500">*</span></label><select value={formData.status_id} onChange={e => handleChange('status_id', Number(e.target.value))} className="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm"><option value={1}>Đã tạo</option><option value={2}>Đã gửi</option><option value={3}>Đã thanh toán</option><option value={4}>Quá hạn</option><option value={5}>Đã huỷ</option></select></div>
                 </div>
 
                 <div className="w-80 flex flex-col items-center">
@@ -359,6 +184,196 @@ export const InvoiceForm = ({ initialData, projects, clients, contracts, onBack,
         </div>
     );
 };
+
+export const StatementForm = ({ onBack, onSave }: any) => {
+    const [isUploadMode, setIsUploadMode] = useState(false);
+    const [formData, setFormData] = useState({
+        document_date: '',
+        document_no: '',
+        object_code: '',
+        object_name: '',
+        address: '',
+        receiving_account: '',
+        amount: 0,
+        currency: 'USD',
+        description: '',
+        invoice_code: '',
+        status: 'Chưa xác định'
+    });
+
+    return (
+        <div className="bg-white dark:bg-slate-800 p-10 rounded-xl min-h-screen animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-8">
+                <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                    <ArrowLeft size={32} className="text-slate-900 dark:text-white" strokeWidth={2.5} />
+                </button>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Thông tin sao kê</h1>
+            </div>
+
+            {/* Toggle Upload */}
+            <div className="mb-8 pl-2">
+                <label className="flex items-center gap-3 cursor-pointer w-fit group">
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isUploadMode ? 'border-black dark:border-white' : 'border-slate-400 group-hover:border-slate-500'}`}>
+                        {isUploadMode && <div className="w-3.5 h-3.5 bg-black dark:bg-white rounded-full"></div>}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={isUploadMode} onChange={() => setIsUploadMode(!isUploadMode)} />
+                    <span className="text-base font-medium text-slate-900 dark:text-white">Upload file</span>
+                </label>
+            </div>
+
+            {isUploadMode ? (
+                // --- Upload UI ---
+                <div className="flex flex-col items-start gap-12 pl-4 pt-4">
+                    <div className="flex gap-16">
+                        <div className="flex flex-col items-center gap-4 cursor-pointer group">
+                            <div className="w-32 h-32 border-[3px] border-black dark:border-white rounded-2xl flex items-center justify-center relative bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                <FileText size={56} strokeWidth={1.5} className="text-slate-900 dark:text-white" />
+                                <div className="absolute bottom-6 right-7 bg-white dark:bg-slate-800 rounded-full">
+                                    <FileDown size={28} className="text-slate-900 dark:text-white" strokeWidth={2.5} />
+                                </div>
+                            </div>
+                            <button className="px-8 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Tải file mẫu</button>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-4 cursor-pointer group">
+                             <div className="w-32 h-32 border-[3px] border-black dark:border-white rounded-2xl flex items-center justify-center relative bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                <FileText size={56} strokeWidth={1.5} className="text-slate-900 dark:text-white" />
+                                <div className="absolute bottom-6 right-7 bg-white dark:bg-slate-800 rounded-full">
+                                    <FileUp size={28} className="text-slate-900 dark:text-white" strokeWidth={2.5} />
+                                </div>
+                            </div>
+                            <button className="px-8 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Upload file</button>
+                        </div>
+                    </div>
+                    <button className="px-16 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ml-10">Save</button>
+                </div>
+            ) : (
+                // --- Manual Entry UI ---
+                <div className="flex gap-16">
+                    <div className="flex-1 max-w-2xl space-y-6">
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Ngày chứng từ <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <input 
+                                    type="date" 
+                                    className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all uppercase placeholder:text-slate-300" 
+                                    placeholder="DD/MM/YYYY"
+                                    onClick={(e) => e.currentTarget.showPicker()}
+                                />
+                                <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Số chứng từ <span className="text-red-500">*</span></label>
+                            <input type="text" placeholder="Số chứng từ" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Mã đối tượng <span className="text-red-500">*</span></label>
+                            <input type="text" placeholder="Mã đối tượng" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Tên đối tượng <span className="text-red-500">*</span></label>
+                            <input type="text" placeholder="Tên đối tượng" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Địa chỉ <span className="text-red-500">*</span></label>
+                            <input type="text" placeholder="Địa chỉ" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Tài khoản nhận <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <select className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-400">
+                                    <option>Chọn tài khoản</option>
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Số tiền <span className="text-red-500">*</span></label>
+                            <input type="number" placeholder="Nhập số tiền" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Đơn vị tiền <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <select className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-400">
+                                    <option>Chọn đơn vị tiền</option>
+                                    <option value="USD">USD</option>
+                                    <option value="VND">VND</option>
+                                    <option value="JPY">JPY</option>
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Diễn giải</label>
+                            <input type="text" placeholder="Nội dung" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Mã hoá đơn <span className="text-red-500">*</span></label>
+                            <input type="text" placeholder="Mã hoá đơn" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Trạng thái <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <select className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-400">
+                                    <option>Chưa xác định</option>
+                                    <option>Chưa duyệt</option>
+                                    <option>Đã duyệt</option>
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                            </div>
+                        </div>
+
+                        <div className="pt-8 text-center">
+                             <button className="bg-black dark:bg-white text-white dark:text-black px-12 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-200 shadow-lg active:scale-95 transition-all">Lưu</button>
+                        </div>
+                    </div>
+
+                    {/* Right Side History */}
+                    <div className="w-[450px]">
+                        <h3 className="font-bold text-slate-900 dark:text-white mb-6">Lịch sử thay đổi</h3>
+                        <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 min-h-[200px]">
+                             <div className="space-y-8 relative">
+                                <div className="absolute left-[7px] top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-600"></div>
+                                
+                                <div className="relative pl-8">
+                                    <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                                        <div className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                                            Thay đổi thông tin: Địa chỉ
+                                        </div>
+                                        <div className="space-y-1 text-xs mb-3">
+                                            <div className="text-slate-500 dark:text-slate-400"><span className="font-semibold">Trước thay đổi:</span></div>
+                                            <div className="text-slate-500 dark:text-slate-400"><span className="font-semibold">Sau thay đổi:</span></div>
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                    </div>
+                                </div>
+
+                                <div className="relative pl-8">
+                                    <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                                        <div className="font-bold text-sm text-slate-900 dark:text-white mb-2">Tạo mới</div>
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
 
 export const InvoiceDetailView = ({ invoice, project, client, contract, onBack, onEdit }: any) => {
     const [activeTab, setActiveTab] = useState<'notes' | 'statement' | 'history'>('notes');
@@ -478,7 +493,7 @@ export const InvoiceDetailView = ({ invoice, project, client, contract, onBack, 
                 <div className="mt-6">
                     <div className="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg w-fit mb-6">
                         <button onClick={() => setActiveTab('notes')} className={`px-6 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'notes' ? 'bg-white dark:bg-slate-600 text-black dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white'}`}>Ghi chú</button>
-                        <button onClick={() => setActiveTab('statement')} className={`px-6 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'statement' ? 'bg-white dark:bg-slate-600 text-black dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white'}`}>Sao kê</button>
+                        <button onClick={() => setActiveTab('statement')} aclassName={`px-6 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'statement' ? 'bg-white dark:bg-slate-600 text-black dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white'}`}>Sao kê</button>
                         <button onClick={() => setActiveTab('history')} className={`px-6 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-600 text-black dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white'}`}>Lịch sử thay đổi</button>
                     </div>
 
@@ -530,9 +545,8 @@ export const InvoiceDetailView = ({ invoice, project, client, contract, onBack, 
                         {activeTab === 'history' && (
                             <div className="space-y-6 max-w-3xl">
                                 <div className="flex gap-4">
-                                    <div className="flex flex-col items-center pt-1">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                                    </div>
+                                    {/* Đã xóa div chứa dấu chấm tròn */}
+                                    
                                     <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex-1">
                                         <div className="font-bold text-sm mb-2 flex items-center gap-2 text-slate-900 dark:text-white">
                                             Thay đổi thông tin: Địa chỉ
@@ -543,9 +557,6 @@ export const InvoiceDetailView = ({ invoice, project, client, contract, onBack, 
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
-                                    <div className="flex flex-col items-center pt-1">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                                    </div>
                                     <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex-1">
                                         <div className="font-bold text-sm mb-1 text-slate-900 dark:text-white">Tạo mới</div>
                                         <div className="text-[10px] text-slate-400 dark:text-slate-500">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
@@ -561,7 +572,7 @@ export const InvoiceDetailView = ({ invoice, project, client, contract, onBack, 
 };
 
 export const InvoicesModule = ({ data, statements, projects, clients, contracts, onAdd, onEdit, onDelete, onViewDetail }: any) => {
-    const [viewMode, setViewMode] = useState<'list' | 'statement'>('list');
+    const [viewMode, setViewMode] = useState<'list' | 'statement' | 'statement-form'>('list');
     const location = useLocation();
     
     // -- Invoice Filters --
@@ -664,6 +675,10 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
 
     const clearInvoiceFilters = () => setInvoiceFilters({ search: '', status: 'all', client: 'all', project: 'all', startDate: '', endDate: '' });
     const clearStatementFilters = () => setStatementFilters({ search: '', status: 'all', objectCode: 'all', objectName: 'all', startDate: '', endDate: '' });
+
+    if (viewMode === 'statement-form') {
+        return <StatementForm onBack={() => setViewMode('statement')} onSave={() => setViewMode('statement')} />
+    }
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[80vh]">
@@ -823,7 +838,7 @@ export const InvoicesModule = ({ data, statements, projects, clients, contracts,
                                 <div className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium">
                                     {filteredStatements.length} sao kê
                                 </div>
-                                <button onClick={() => {}} className="px-4 py-2 bg-black dark:bg-white dark:text-black text-white rounded-lg text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-200">Thêm sao kê</button>
+                                <button onClick={() => setViewMode('statement-form')} className="px-4 py-2 bg-black dark:bg-white dark:text-black text-white rounded-lg text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-200">Thêm sao kê</button>
                             </div>
                         </div>
 
