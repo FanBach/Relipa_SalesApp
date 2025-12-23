@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
@@ -24,18 +25,18 @@ const COLORS = {
 };
 
 const StatCard = ({ title, value, subValue, trend, icon: Icon, colorClass }: any) => (
-  <div className="bg-white p-5 rounded-[20px] shadow-sm border border-slate-100 flex flex-col justify-between h-full hover:shadow-md transition-all">
+  <div className="bg-white dark:bg-slate-800 p-5 rounded-[20px] shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between h-full hover:shadow-md transition-all">
     <div className="flex justify-between items-start mb-4">
       <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{title}</p>
-        <h3 className="text-xl font-black text-slate-900 leading-none">{value}</h3>
+        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{title}</p>
+        <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none">{value}</h3>
       </div>
-      <div className={`p-2 rounded-xl ${colorClass} bg-opacity-10`}>
+      <div className={`p-2 rounded-xl ${colorClass} bg-opacity-10 dark:bg-opacity-20`}>
         <Icon size={20} className={colorClass.replace('bg-', 'text-')} />
       </div>
     </div>
     <div className="flex items-center justify-between">
-      <p className="text-[10px] text-slate-500 font-bold">{subValue}</p>
+      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{subValue}</p>
       {trend && (
         <div className={`flex items-center text-[10px] font-black ${trend >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
           {trend >= 0 ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
@@ -48,14 +49,14 @@ const StatCard = ({ title, value, subValue, trend, icon: Icon, colorClass }: any
 
 const SectionHeader = ({ title, expanded, onToggle }: any) => (
   <div className="flex items-center gap-2 cursor-pointer group mb-6 w-fit" onClick={onToggle}>
-    <h2 className="text-xl font-black text-slate-900 tracking-tight">{title}</h2>
+    <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
     <ChevronDown size={20} className={`text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
   </div>
 );
 
 const PieCenterLabel = () => (
   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-    <div className="bg-[#cbd5e1] px-2 py-0.5 rounded text-[9px] font-black text-white whitespace-nowrap uppercase">
+    <div className="bg-[#cbd5e1] dark:bg-slate-600 px-2 py-0.5 rounded text-[9px] font-black text-white whitespace-nowrap uppercase">
       2,3M US$
     </div>
   </div>
@@ -114,15 +115,15 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
         {revExpanded && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Pie Bộ phận */}
-            <div className="lg:col-span-4 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ doanh thu theo bộ phận</h3>
+            <div className="lg:col-span-4 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-6">Phân bổ doanh thu theo bộ phận</h3>
               <div className="h-64 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={[{name:'Division 1',v:33},{name:'Division 2',v:35},{name:'Global',v:32},{name:'R&D',v:0}]} innerRadius={60} outerRadius={85} dataKey="v" labelLine={false} label={renderCustomizedLabel}>
                       <Cell fill={COLORS.blue} /><Cell fill={COLORS.amber} /><Cell fill={COLORS.green} /><Cell fill={COLORS.pink} />
                     </Pie>
-                    <RechartsTooltip />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', color: '#fff' }} itemStyle={{ color: '#fff' }} />
                     <Legend align="right" verticalAlign="middle" layout="vertical" iconType="rect" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingLeft: '10px' }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -131,9 +132,9 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
             </div>
 
             {/* Bar Thời gian */}
-            <div className="lg:col-span-8 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
+            <div className="lg:col-span-8 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Phân bổ doanh thu theo thời gian</h3>
+                <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Phân bổ doanh thu theo thời gian</h3>
                 <div className="flex gap-2 text-[9px] font-black uppercase text-slate-400">
                   <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#38bdf8]"></div> Kế hoạch</span>
                   <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#fbbf24]"></div> Thực tế</span>
@@ -143,10 +144,10 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={quarterlyData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="black" />
-                    <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
-                    <RechartsTooltip />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="black" stroke="#94a3b8" />
+                    <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" stroke="#94a3b8" />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', color: '#fff' }} itemStyle={{ color: '#fff' }} />
                     <Bar dataKey="p" name="Kế hoạch" fill={COLORS.blue} radius={[4, 4, 0, 0]} barSize={20} />
                     <Bar dataKey="a" name="Thực tế" fill={COLORS.amber} radius={[4, 4, 0, 0]} barSize={20} />
                     <Bar dataKey="f" name="Dự báo" fill={COLORS.green} radius={[4, 4, 0, 0]} barSize={20} />
@@ -156,18 +157,18 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
             </div>
 
             {/* Area YTD */}
-            <div className="lg:col-span-12 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
-              <h3 className="text-sm font-black text-slate-900 uppercase mb-8 text-center">Doanh thu luỹ kế (YTD)</h3>
+            <div className="lg:col-span-12 bg-white dark:bg-slate-800 p-8 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-8 text-center">Doanh thu luỹ kế (YTD)</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={monthlyData}>
                     <defs>
                       <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={COLORS.amber} stopOpacity={0.1}/><stop offset="95%" stopColor={COLORS.amber} stopOpacity={0}/></linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={11} fontWeight="black" />
-                    <YAxis axisLine={false} tickLine={false} fontSize={11} fontWeight="bold" />
-                    <RechartsTooltip />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={11} fontWeight="black" stroke="#94a3b8" />
+                    <YAxis axisLine={false} tickLine={false} fontSize={11} fontWeight="bold" stroke="#94a3b8" />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', color: '#fff' }} itemStyle={{ color: '#fff' }} />
                     <Legend verticalAlign="bottom" align="center" iconType="plainline" />
                     <Area type="monotone" dataKey="rev" name="Thực tế" stroke={COLORS.amber} strokeWidth={4} fill="url(#areaGrad)" dot={{ r: 4, fill: COLORS.amber }} />
                     <Line type="monotone" dataKey="plan" name="Kế hoạch" stroke={COLORS.blue} strokeDasharray="5 5" strokeWidth={2} dot={false} />
@@ -178,8 +179,8 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
             </div>
 
             {/* Pie Khách hàng */}
-            <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ doanh thu theo khách hàng</h3>
+            <div className="lg:col-span-6 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-6">Phân bổ doanh thu theo khách hàng</h3>
               <div className="h-60 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -194,8 +195,8 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
             </div>
 
             {/* Pie Dự án */}
-            <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ doanh thu theo dự án</h3>
+            <div className="lg:col-span-6 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-6">Phân bổ doanh thu theo dự án</h3>
               <div className="h-60 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -210,15 +211,15 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
             </div>
 
             {/* Bar Phân bổ bộ phận */}
-            <div className="lg:col-span-12 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-8">Phân bổ doanh thu các bộ phận</h3>
+            <div className="lg:col-span-12 bg-white dark:bg-slate-800 p-8 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-8">Phân bổ doanh thu các bộ phận</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="black" />
-                    <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" />
-                    <RechartsTooltip />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="black" stroke="#94a3b8" />
+                    <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="bold" stroke="#94a3b8" />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', color: '#fff' }} itemStyle={{ color: '#fff' }} />
                     <Legend verticalAlign="bottom" align="center" iconType="rect" wrapperStyle={{ fontSize: '10px', fontWeight: 'black', paddingTop: '20px' }} />
                     <Bar dataKey="d1" name="Division 1" fill={COLORS.blue} radius={[2, 2, 0, 0]} barSize={12} />
                     <Bar dataKey="d2" name="Division 2" fill={COLORS.amber} radius={[2, 2, 0, 0]} barSize={12} />
@@ -236,15 +237,15 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
         <SectionHeader title="Thanh toán" expanded={payExpanded} onToggle={() => setPayExpanded(!payExpanded)} />
         {payExpanded && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-12 bg-white p-8 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-10">Doanh thu & công nợ & thanh toán</h3>
+            <div className="lg:col-span-12 bg-white dark:bg-slate-800 p-8 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-10">Doanh thu & công nợ & thanh toán</h3>
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={{ stroke: '#cbd5e1' }} tickLine={false} fontSize={11} fontWeight="black" dy={10} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                    <XAxis dataKey="name" axisLine={{ stroke: '#cbd5e1' }} tickLine={false} fontSize={11} fontWeight="black" dy={10} stroke="#94a3b8" />
                     <YAxis hide />
-                    <RechartsTooltip />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', color: '#fff' }} itemStyle={{ color: '#fff' }} />
                     <Legend verticalAlign="bottom" align="center" iconType="plainline" wrapperStyle={{ paddingTop: '30px', fontSize: '11px', fontWeight: 'black' }} />
                     <Line type="monotone" dataKey="rev" name="Doanh thu" stroke={COLORS.green} strokeWidth={3} dot={{ r: 4, fill: COLORS.green, strokeWidth: 2, stroke: '#fff' }} />
                     <Line type="monotone" dataKey="debt" name="Công nợ" stroke={COLORS.amber} strokeWidth={3} dot={{ r: 4, fill: COLORS.amber, strokeWidth: 2, stroke: '#fff' }} />
@@ -254,8 +255,8 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Tình trạng thanh toán</h3>
+            <div className="lg:col-span-6 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-6">Tình trạng thanh toán</h3>
               <div className="h-60 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -269,8 +270,8 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
               </div>
             </div>
 
-            <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-6">Phân bổ công nợ theo khách hàng</h3>
+            <div className="lg:col-span-6 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-6">Phân bổ công nợ theo khách hàng</h3>
               <div className="h-60 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -285,25 +286,25 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
             </div>
 
             {/* List Hoá đơn cảnh báo */}
-            <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-[11px] font-black text-slate-900 uppercase mb-6 flex justify-between">Hoá đơn quá hạn <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[9px] font-black">5 hoá đơn</span></h3>
+            <div className="lg:col-span-6 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase mb-6 flex justify-between">Hoá đơn quá hạn <span className="bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300 px-2 py-0.5 rounded-full text-[9px] font-black">5 hoá đơn</span></h3>
               <div className="space-y-3">
                 {[1,2,3].map(i => (
-                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 border border-slate-100">
-                    <div><p className="text-xs font-black text-slate-900">INV-BAC-20250418</p><p className="text-[10px] text-slate-500 font-bold">FPT Software</p></div>
-                    <div className="text-right"><p className="text-xs font-black text-slate-900">500,000.00 US$</p><p className="text-[9px] text-rose-600 font-black">Quá hạn 20 ngày</p></div>
+                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600">
+                    <div><p className="text-xs font-black text-slate-900 dark:text-white">INV-BAC-20250418</p><p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">FPT Software</p></div>
+                    <div className="text-right"><p className="text-xs font-black text-slate-900 dark:text-white">500,000.00 US$</p><p className="text-[9px] text-rose-600 dark:text-rose-400 font-black">Quá hạn 20 ngày</p></div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="lg:col-span-6 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-[11px] font-black text-slate-900 uppercase mb-6 flex justify-between">Hoá đơn chờ thanh toán <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full text-[9px] font-black">12 hoá đơn</span></h3>
+            <div className="lg:col-span-6 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase mb-6 flex justify-between">Hoá đơn chờ thanh toán <span className="bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 px-2 py-0.5 rounded-full text-[9px] font-black">12 hoá đơn</span></h3>
               <div className="space-y-3">
                 {[1,2,3].map(i => (
-                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 border border-slate-100">
-                    <div><p className="text-xs font-black text-slate-900">INV-BAC-20250418</p><p className="text-[10px] text-slate-500 font-bold">FPT Software</p></div>
-                    <div className="text-right"><p className="text-xs font-black text-slate-900">500,000.00 US$</p><p className="text-[9px] text-amber-600 font-black">Hạn sau 20 ngày</p></div>
+                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600">
+                    <div><p className="text-xs font-black text-slate-900 dark:text-white">INV-BAC-20250418</p><p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">FPT Software</p></div>
+                    <div className="text-right"><p className="text-xs font-black text-slate-900 dark:text-white">500,000.00 US$</p><p className="text-[9px] text-amber-600 dark:text-amber-400 font-black">Hạn sau 20 ngày</p></div>
                   </div>
                 ))}
               </div>
@@ -317,25 +318,25 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, projects, contracts, cl
         <SectionHeader title="Hợp đồng" expanded={conExpanded} onToggle={() => setConExpanded(!conExpanded)} />
         {conExpanded && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-[11px] font-black text-slate-900 uppercase mb-6 flex justify-between">Hợp đồng sắp hết hạn <span className="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[9px] font-black">3 hợp đồng</span></h3>
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase mb-6 flex justify-between">Hợp đồng sắp hết hạn <span className="bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300 px-2 py-0.5 rounded-full text-[9px] font-black">3 hợp đồng</span></h3>
               <div className="space-y-3">
                 {[1,2,3].map(i => (
-                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 border border-slate-100">
-                    <div><p className="text-xs font-black text-slate-900">MBA-C-001</p><p className="text-[10px] text-slate-500 font-bold">FPT Software</p></div>
-                    <div className="text-right"><p className="text-xs font-black text-slate-900">500,000 US$</p><p className="text-[9px] text-rose-600 font-black">Hết hạn sau 20 ngày</p></div>
+                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600">
+                    <div><p className="text-xs font-black text-slate-900 dark:text-white">MBA-C-001</p><p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">FPT Software</p></div>
+                    <div className="text-right"><p className="text-xs font-black text-slate-900 dark:text-white">500,000 US$</p><p className="text-[9px] text-rose-600 dark:text-rose-400 font-black">Hết hạn sau 20 ngày</p></div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-              <h3 className="text-[11px] font-black text-slate-900 uppercase mb-6 flex justify-between">Hợp đồng sắp đến hạn thanh toán <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full text-[9px] font-black">5 hợp đồng</span></h3>
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700 shadow-sm">
+              <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase mb-6 flex justify-between">Hợp đồng sắp đến hạn thanh toán <span className="bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 px-2 py-0.5 rounded-full text-[9px] font-black">5 hợp đồng</span></h3>
               <div className="space-y-3">
                 {[1,2,3].map(i => (
-                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 border border-slate-100">
-                    <div><p className="text-xs font-black text-slate-900">MBA-C-001</p><p className="text-[10px] text-slate-500 font-bold">FPT Software</p></div>
-                    <div className="text-right"><p className="text-xs font-black text-slate-900">500,000 US$</p><p className="text-[9px] text-amber-600 font-black">Thanh toán sau 10 ngày</p></div>
+                  <div key={i} className="flex justify-between items-center p-4 rounded-[20px] bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600">
+                    <div><p className="text-xs font-black text-slate-900 dark:text-white">MBA-C-001</p><p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">FPT Software</p></div>
+                    <div className="text-right"><p className="text-xs font-black text-slate-900 dark:text-white">500,000 US$</p><p className="text-[9px] text-amber-600 dark:text-amber-400 font-black">Thanh toán sau 10 ngày</p></div>
                   </div>
                 ))}
               </div>

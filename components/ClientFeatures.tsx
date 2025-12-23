@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, PlusCircle, X, CheckSquare, Calendar as CalendarIcon, ChevronDown, ChevronRight, Edit3, Filter } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Client, Project, Contract, Invoice, ChangeLog, User, MasterCategory, Permission } from '../types';
-import { StatusBadge, FormHeader, FilterBar } from './Shared';
+import { StatusBadge, FormHeader, FilterBar, DateRangePicker, parseDDMMYYYY } from './Shared';
 import { getMockData } from '../services/mockData';
 
 export const ClientForm = ({ initialData, onBack, onSave, masterData, users, clients, permissions = [] }: { 
@@ -14,8 +15,7 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
     clients: Client[],
     permissions: Permission[]
 }) => {
-    // EX001: Permission check
-    const canCreate = permissions?.find(p => p.module === 'Khách hàng' && p.role === 'Sale Admin')?.canAdd ?? true; // Simulating check
+    const canCreate = permissions?.find(p => p.module === 'Khách hàng' && p.role === 'Sale Admin')?.canAdd ?? true;
     const isEdit = !!initialData?.id;
     
     const [formData, setFormData] = useState<Partial<Client>>(initialData || {
@@ -40,7 +40,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
 
     useEffect(() => {
         if (isAutoCode && formData.name) {
-            // Auto generate rule: 3 chars from name, uppercase
             const cleanName = formData.name.replace(/[^a-zA-Z]/g, '');
             const auto = cleanName.substring(0, 3).toUpperCase();
             setFormData(prev => ({ ...prev, code: auto }));
@@ -53,7 +52,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
 
     const handleChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-        // Clear error when user types
         if (errors[field]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -68,7 +66,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
         newPayers[index] = { ...newPayers[index], [field]: value };
         setFormData(prev => ({ ...prev, payers: newPayers }));
         
-        // Clear specific payer error if exists
         const errorKey = `payer_${index}_${field}`;
         if (errors[errorKey]) {
              setErrors(prev => {
@@ -90,7 +87,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
     const validate = () => {
         const newErrors: Record<string, string> = {};
         
-        // EX002: Required fields
         if (!formData.name) newErrors.name = "Trường bắt buộc.";
         if (!formData.code) newErrors.code = "Trường bắt buộc.";
         if (!formData.type) newErrors.type = "Trường bắt buộc.";
@@ -101,23 +97,19 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
         if (!formData.first_signed_date) newErrors.first_signed_date = "Trường bắt buộc.";
         if (!formData.owner_sales_id) newErrors.owner_sales_id = "Trường bắt buộc.";
 
-        // EX006: Max length
         if (formData.name && formData.name.length > 255) newErrors.name = "Không được vượt quá 255 ký tự.";
         if (formData.tax_code && formData.tax_code.length > 15) newErrors.tax_code = "Không được vượt quá 15 ký tự.";
         if (formData.representative && formData.representative.length > 255) newErrors.representative = "Không được vượt quá 255 ký tự.";
         if (formData.address && formData.address.length > 500) newErrors.address = "Không được vượt quá 500 ký tự.";
         if (formData.noted && formData.noted.length > 1000) newErrors.noted = "Không được vượt quá 1000 ký tự.";
 
-        // EX010 & Spec Item 6: Code format (3 chars)
         if (formData.code && formData.code.length !== 3) newErrors.code = "Mã khách hàng chỉ gồm 3 ký tự chữ.";
 
-        // EX003: Duplicate Code
         if (formData.code) {
             const exists = clients.some(c => c.code === formData.code && c.id !== initialData?.id);
             if (exists) newErrors.code = "Mã khách hàng đã tồn tại.";
         }
 
-        // EX004: Payers min 1
         if (!formData.payers || formData.payers.length === 0) {
             newErrors.payers = "Cần ít nhất 1 người thanh toán.";
         } else {
@@ -127,7 +119,7 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 
                 if (!p.email) {
                     newErrors[`payer_${idx}_email`] = "Trường bắt buộc.";
-                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) { // EX005
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) {
                     newErrors[`payer_${idx}_email`] = "Email không hợp lệ.";
                 } else if (p.email.length > 255) {
                     newErrors[`payer_${idx}_email`] = "Tối đa 255 ký tự.";
@@ -151,7 +143,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
          {errors.system && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{errors.system}</div>}
          
          <div className="grid grid-cols-2 gap-x-12 gap-y-6 max-w-5xl">
-            {/* Row 1 */}
             <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-900">Tên khách hàng *</label>
                 <input 
@@ -189,7 +180,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 </div>
             </div>
 
-            {/* Row 2 */}
             <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-900">Mã số thuế</label>
                 <input 
@@ -216,7 +206,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.type && <p className="text-xs text-red-500">{errors.type}</p>}
             </div>
 
-            {/* Row 3 */}
             <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-900">Người đại diện *</label>
                 <input 
@@ -233,17 +222,15 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 <select 
                     value={formData.lead_source}
                     onChange={e => handleChange('lead_source', e.target.value)}
-                    className={`w-full p-2.5 border rounded-lg text-sm focus:ring-1 focus:outline-none ${errors.lead_source ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                    className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black`}
                 >
                     <option value="">Lead source</option>
                     {masterData.find(m => m.id === 'lead_source')?.items.map(item => (
                         <option key={item} value={item}>{item}</option>
                     ))}
                 </select>
-                {errors.lead_source && <p className="text-xs text-red-500">{errors.lead_source}</p>}
             </div>
 
-            {/* Row 4 */}
             <div className="space-y-1">
                  <label className="text-sm font-medium text-slate-900">Địa chỉ *</label>
                  <input 
@@ -270,7 +257,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.lead_get_id && <p className="text-xs text-red-500">{errors.lead_get_id}</p>}
             </div>
 
-            {/* Row 5 */}
             <div className="space-y-1">
                  <label className="text-sm font-medium text-slate-900">Ngày ký đầu *</label>
                  <div className="relative">
@@ -298,7 +284,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.owner_sales_id && <p className="text-xs text-red-500">{errors.owner_sales_id}</p>}
             </div>
 
-            {/* Row 6 */}
             <div className="col-span-2 space-y-1">
                 <label className="text-sm font-medium text-slate-900">Ghi chú</label>
                 <textarea 
@@ -310,7 +295,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                 {errors.noted && <p className="text-xs text-red-500">{errors.noted}</p>}
             </div>
 
-            {/* Payers Section */}
             <div className="col-span-2 mt-4">
                 <label className="text-sm font-bold text-slate-900 block mb-3">Người thanh toán *</label>
                 <div className="space-y-3">
@@ -324,20 +308,18 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
                                     type="text" 
                                     value={payer.name} 
                                     onChange={e => handlePayerChange(index, 'name', e.target.value)}
-                                    className={`w-full p-2.5 border rounded-lg text-sm focus:ring-1 focus:outline-none ${errors[`payer_${index}_name`] ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                                    className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black`}
                                     placeholder="Tên người thanh toán" 
                                 />
-                                {errors[`payer_${index}_name`] && <p className="text-xs text-red-500">{errors[`payer_${index}_name`]}</p>}
                             </div>
                             <div className="flex-1 space-y-1">
                                 <input 
                                     type="text" 
                                     value={payer.email} 
                                     onChange={e => handlePayerChange(index, 'email', e.target.value)}
-                                    className={`w-full p-2.5 border rounded-lg text-sm focus:ring-1 focus:outline-none ${errors[`payer_${index}_email`] ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                                    className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black`}
                                     placeholder="Email người thanh toán" 
                                 />
-                                {errors[`payer_${index}_email`] && <p className="text-xs text-red-500">{errors[`payer_${index}_email`]}</p>}
                             </div>
                         </div>
                     ))}
@@ -355,7 +337,6 @@ export const ClientForm = ({ initialData, onBack, onSave, masterData, users, cli
 export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, masterData, users, permissions }: any) => {
     const canView = permissions?.find((p: Permission) => p.module === 'Khách hàng' && p.role === 'Sale Admin')?.canView ?? true;
 
-    // State for filtering
     const [filters, setFilters] = useState({
         type: 'all',
         salesman: 'all',
@@ -365,7 +346,6 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
         search: ''
     });
     
-    // EX002: System Error State
     const [systemError, setSystemError] = useState(false);
     const [searchError, setSearchError] = useState('');
 
@@ -393,7 +373,8 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
         setSearchError('');
     };
 
-    // Filter Logic
+    const isFiltered = filters.type !== 'all' || filters.salesman !== 'all' || filters.source !== 'all' || filters.startDate !== '' || filters.endDate !== '';
+
     const filteredData = data.filter((c: Client) => {
         if (filters.type !== 'all' && c.type !== filters.type) return false;
         if (filters.salesman !== 'all') {
@@ -401,18 +382,25 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
              if (salesman?.full_name !== filters.salesman) return false;
         }
         if (filters.source !== 'all' && c.lead_source !== filters.source) return false;
-        if (filters.startDate && c.first_signed_date) {
-             const [d1, m1, y1] = c.first_signed_date.split('/');
-             const date = new Date(`${y1}-${m1}-${d1}`);
-             const start = new Date(filters.startDate);
-             if (date < start) return false;
+        
+        if (filters.startDate || filters.endDate) {
+             const date = parseDDMMYYYY(c.first_signed_date);
+             if (date) {
+                 if (filters.startDate) {
+                     const start = new Date(filters.startDate);
+                     start.setHours(0,0,0,0);
+                     if (date < start) return false;
+                 }
+                 if (filters.endDate) {
+                     const end = new Date(filters.endDate);
+                     end.setHours(23,59,59,999);
+                     if (date > end) return false;
+                 }
+             } else {
+                 return false;
+             }
         }
-         if (filters.endDate && c.first_signed_date) {
-             const [d1, m1, y1] = c.first_signed_date.split('/');
-             const date = new Date(`${y1}-${m1}-${d1}`);
-             const end = new Date(filters.endDate);
-             if (date > end) return false;
-        }
+
         if (filters.search) {
             const searchLower = filters.search.toLowerCase();
             if (!c.name.toLowerCase().includes(searchLower) && !c.code.toLowerCase().includes(searchLower)) {
@@ -429,31 +417,18 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
         <div className="p-6">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Quản lý khách hàng</h2>
-            
-            {/* Top Bar: Search + Count + Add */}
-            <div className="flex justify-between items-center gap-4 mb-4">
-                <div className="flex items-center gap-3 flex-1 max-w-2xl">
-                    <div className="relative w-full">
-                        <input 
-                            type="text" 
-                            placeholder="Tìm kiếm khách hàng ..." 
-                            className="w-full pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black" 
-                            value={filters.search} 
-                            onChange={(e) => handleFilterChange('search', e.target.value)} 
-                        />
-                    </div>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Quản lý khách hàng</h2>
+                <div className="flex items-center gap-3">
                     <div className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-medium text-slate-600 whitespace-nowrap">
                         {filteredData.length} khách hàng
                     </div>
+                    <button onClick={onAdd} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
+                        Thêm khách hàng
+                    </button>
                 </div>
-                <button onClick={onAdd} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
-                    Thêm khách hàng
-                </button>
             </div>
-            {searchError && <div className="text-red-500 text-xs mb-4">{searchError}</div>}
 
-            {/* Filter Bar */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
                 <div className="p-2"><Filter size={20} className="text-slate-900" /></div>
                 
@@ -481,13 +456,19 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
                     <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 </div>
 
-                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded px-3 py-1.5 hover:border-slate-300">
-                    <span className="text-xs text-slate-400">Tất cả thời gian</span>
-                    <CalendarIcon size={14} className="text-slate-400"/>
-                    <input type="date" className="text-xs text-slate-600 focus:outline-none w-4 bg-transparent opacity-0 absolute w-24 cursor-pointer" onChange={e => handleFilterChange('startDate', e.target.value)} />
+                <div className="w-auto">
+                    <DateRangePicker 
+                        startDate={filters.startDate} 
+                        endDate={filters.endDate} 
+                        onChange={(start, end) => {
+                            setFilters(prev => ({ ...prev, startDate: start, endDate: end }));
+                        }} 
+                    />
                 </div>
 
-                <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                {isFiltered && (
+                    <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-500 hover:bg-slate-50 transition-all">Xoá bộ lọc</button>
+                )}
                 
                 <div className="ml-auto">
                     <button onClick={() => alert("Đang tải xuống danh sách khách hàng...")} className="px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-600 hover:bg-slate-50 flex items-center gap-2">
@@ -496,7 +477,6 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
                 </div>
             </div>
 
-            {/* Table */}
             {filteredData.length === 0 ? (
                 <div className="text-center py-10 text-slate-500">Không tìm thấy kết quả.</div>
             ) : (
@@ -553,13 +533,11 @@ export const ClientsModule = ({ data, onAdd, onEdit, onDelete, onViewDetail, mas
 export const ClientDetailView = ({ client, projects, contracts, invoices, users, onBack, onEdit, onAddProject, onChangeTab, onNavigate }: any) => {
     const [activeTab, setActiveTab] = useState<'projects' | 'contracts' | 'revenue' | 'history'>('projects');
     
-    // Helpers
     const clientProjects = projects.filter((p: Project) => p.client_id === client.id);
     const clientContracts = contracts.filter((c: Contract) => c.client_id === client.id);
     const clientInvoices = invoices.filter((i: Invoice) => i.client_id === client.id);
     const changeLogs = getMockData().changeLogs.filter((l: ChangeLog) => l.record_id === client.id && l.table_name === 'clients') || [];
     
-    // Financial Calcs based on spec
     const totalContractValue = clientContracts.reduce((sum: number, c: Contract) => sum + c.total_value, 0);
     const netRevenue = clientContracts.reduce((sum: number, c: Contract) => sum + (c.net_revenue || 0), 0);
     const amountAfterVat = clientInvoices.reduce((sum: number, i: Invoice) => sum + (i.amount_after_vat || 0), 0);
@@ -571,7 +549,6 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
 
     return (
         <div className="min-h-screen pb-10">
-            {/* Header */}
             <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                     <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full">
@@ -583,15 +560,13 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={onAddProject} className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Thêm dự án</button>
+                    <button onClick={() => onNavigate('/projects', { state: { createProjectForClient: client.id } })} className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Thêm dự án</button>
                     <button onClick={() => onEdit(client)} className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-slate-800">Chỉnh sửa</button>
                 </div>
             </div>
 
             <div className="p-8 max-w-7xl mx-auto space-y-6">
-                {/* Info & Financials Split */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Client Info Card - Takes 2/3 width */}
                     <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                         <h3 className="font-bold text-slate-900 mb-6">Thông tin khách hàng</h3>
                         <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
@@ -621,15 +596,15 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                     <div className="space-y-2">
                                         {client.payers && client.payers.length > 0 ? (
                                             client.payers.map((p: any, idx: number) => (
-                                                <div key={idx} className="flex justify-between text-xs">
-                                                    <span className="font-medium text-slate-900">{p.name}</span>
-                                                    <span className="text-slate-500">{p.email}</span>
+                                                <div key={idx} className="flex justify-between items-center text-sm border-b border-slate-50 last:border-0 py-1">
+                                                    <span className="font-bold text-slate-900">{p.name}</span>
+                                                    <span className="font-bold text-slate-900">{p.email}</span>
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="flex justify-between text-xs">
-                                                <span className="font-medium text-slate-900">{client.payer_name}</span>
-                                                <span className="text-slate-500">{client.payer_email}</span>
+                                            <div className="flex justify-between items-center text-sm border-b border-slate-50 last:border-0 py-1">
+                                                <span className="font-bold text-slate-900">{client.payer_name}</span>
+                                                <span className="font-bold text-slate-900">{client.payer_email}</span>
                                             </div>
                                         )}
                                     </div>
@@ -664,7 +639,6 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                         </div>
                     </div>
 
-                    {/* Financial Card - Takes 1/3 width */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 h-full">
                          <h3 className="font-bold text-slate-900 mb-6">Tổng quan tài chính</h3>
                          <div className="space-y-4">
@@ -673,7 +647,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                     <div className="text-xs text-slate-500 mb-1 font-medium">Tổng giá trị hợp đồng</div>
                                     <div className="font-bold text-lg text-slate-900">{totalContractValue.toLocaleString()} US$</div>
                                 </div>
-                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">{clientContracts.length}</div>
+                                <ChevronRight size={20} className="text-slate-400" />
                             </div>
                             <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onNavigate('contracts')}>
                                 <div>
@@ -693,7 +667,6 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                     </div>
                 </div>
 
-                {/* Tabs & Lists */}
                 <div>
                      <div className="bg-slate-100 p-1 rounded-lg inline-flex mb-6">
                          <button onClick={() => setActiveTab('projects')} className={`py-2 px-6 text-sm font-medium rounded-md transition-all ${activeTab === 'projects' ? 'bg-white text-black shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
@@ -714,29 +687,27 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                          {activeTab === 'projects' && (
                              <div className="space-y-4">
                                  {clientProjects.map((p: Project) => {
-                                     // Project revenue logic
                                      const pContracts = contracts.filter((c: Contract) => c.project_id === p.id);
                                      const pRevenue = pContracts.reduce((sum: number, c: Contract) => sum + c.total_value, 0);
 
                                      return (
-                                     <div key={p.id} className="border border-slate-200 rounded-lg p-5 flex justify-between items-start hover:bg-slate-50 transition-colors">
-                                         <div className="flex-1">
-                                             <div className="flex items-center gap-3 mb-2">
-                                                 <span className="font-bold text-slate-900 text-lg">{p.name}</span>
-                                                 {/* Status Badge Custom */}
-                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${p.status_id === 2 ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'}`}>
-                                                     {p.status_id === 2 ? 'Đang triển khai' : 'Hoàn thành'}
-                                                 </span>
-                                             </div>
-                                             <div className="grid grid-cols-2 gap-y-1 text-sm text-slate-600 max-w-lg">
-                                                 <div>Mã dự án: <span className="font-medium text-slate-900">{p.code}</span></div>
-                                                 <div>Bộ phận phát triển: <span className="font-medium text-slate-900">{p.div_id || p.division}</span></div>
-                                                 <div>Doanh thu: <span className="font-medium text-slate-900">{pRevenue.toLocaleString()} {p.currency}</span></div>
-                                             </div>
+                                     <div key={p.id} className="border border-slate-200 rounded-xl p-6 bg-white hover:shadow-md transition-all">
+                                         <div className="flex justify-between items-start mb-4">
+                                             <span className="font-bold text-slate-900 text-lg">{p.name}</span>
+                                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${p.status_id === 2 ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'}`}>
+                                                 {p.status_id === 2 ? 'Đang triển khai' : 'Hoàn thành'}
+                                             </span>
                                          </div>
-                                         <div className="text-right text-sm text-slate-600 space-y-1">
-                                             <div>Ngày bắt đầu: <span className="font-medium text-slate-900">{p.start_date}</span></div>
-                                             <div>Ngày kết thúc: <span className="font-medium text-slate-900">{p.end_date}</span></div>
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-slate-700">
+                                             <div className="space-y-2">
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Mã dự án:</span> <span>{p.code}</span></div>
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Bộ phận phát triển:</span> <span>{p.div_id || p.division}</span></div>
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Doanh thu:</span> <span>{pRevenue.toLocaleString()} {p.currency}</span></div>
+                                             </div>
+                                             <div className="space-y-2">
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Ngày bắt đầu:</span> <span>{p.start_date}</span></div>
+                                                 <div className="flex gap-2"><span className="font-semibold text-slate-900 w-32 shrink-0">Ngày kết thúc:</span> <span>{p.end_date}</span></div>
+                                             </div>
                                          </div>
                                      </div>
                                  )})}
@@ -747,17 +718,25 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                          {activeTab === 'contracts' && (
                              <div className="space-y-4">
                                  {clientContracts.map((c: Contract) => {
-                                     // Validity check for badge
-                                     const isExpiringSoon = false; // Mock logic
+                                     let statusLabel = 'Dự kiến';
+                                     if (c.status_id === 1) statusLabel = 'Đang trao đổi';
+                                     else if (c.status_id === 2) {
+                                         const now = new Date();
+                                         const end = new Date(c.end_date.split('/').reverse().join('-'));
+                                         const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                         if (diff < 0) statusLabel = 'Đã hết hạn';
+                                         else if (diff <= 3) statusLabel = `Hết hạn sau ${diff} ngày`;
+                                         else statusLabel = 'Đã ký';
+                                     }
+
                                      return (
                                      <div key={c.id} className="border border-slate-200 rounded-lg p-5 flex justify-between items-center hover:bg-slate-50 transition-colors">
                                          <div className="flex-1">
                                              <div className="flex items-center gap-3 mb-2">
                                                  <span className="font-bold text-slate-900 text-lg">{c.code}</span>
                                                  <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-medium">
-                                                     {c.status_id === 1 ? 'Chờ ký' : c.status_id === 2 ? 'Đã ký' : 'Hết hạn sau 3 ngày'}
+                                                     {statusLabel}
                                                  </span>
-                                                 <span className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
                                              </div>
                                              <div className="grid grid-cols-2 gap-y-1 text-sm text-slate-600 max-w-lg">
                                                  <div>Ngày ký kết: <span className="font-medium text-slate-900">{c.sign_date || '-'}</span></div>
@@ -789,7 +768,19 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                         <YAxis fontSize={12} tickLine={false} axisLine={false} />
                                         <RechartsTooltip 
                                             cursor={{fill: 'transparent'}} 
-                                            formatter={(value: any) => [`${value.toLocaleString()} US$`, 'Doanh thu']}
+                                            content={({ active, payload, label }) => {
+                                                if (active && payload && payload.length) {
+                                                    return (
+                                                        <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-xl">
+                                                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{label}</p>
+                                                            <p className="text-sm font-bold text-black">
+                                                                Doanh thu: {Number(payload[0].value).toLocaleString()} US$
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
                                         />
                                         <Bar dataKey="uv" fill="#e2e8f0" activeBar={{ fill: '#64748b' }} barSize={40} radius={[4, 4, 0, 0]} />
                                     </BarChart>
@@ -802,7 +793,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                 {changeLogs.length > 0 ? changeLogs.map((log: ChangeLog) => (
                                     <div key={log.id} className="flex gap-4">
                                         <div className="flex flex-col items-center">
-                                            <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">{log.id}</div>
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs"></div>
                                         </div>
                                         <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                             {log.action_type === 'create' ? (
@@ -813,7 +804,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                             ) : (
                                                 <>
                                                     <div className="font-bold text-sm mb-2 flex items-center gap-2">
-                                                        Thay đổi thông tin: {log.column_name} <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                                        Thay đổi thông tin: {log.column_name}
                                                     </div>
                                                     <div className="text-xs text-slate-500 mb-1">Trước thay đổi: {log.old_value}</div>
                                                     <div className="text-xs text-slate-500 mb-2">Sau thay đổi: {log.new_value}</div>
@@ -823,15 +814,14 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                         </div>
                                     </div>
                                 )) : (
-                                    /* Mock History Item */
                                     <>
                                         <div className="flex gap-4">
                                             <div className="flex flex-col items-center">
-                                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">2</div>
+                                                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs"></div>
                                             </div>
                                             <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                                 <div className="font-bold text-sm mb-2 flex items-center gap-2">
-                                                    Thay đổi thông tin: Địa chỉ <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                                    Thay đổi thông tin: Địa chỉ
                                                 </div>
                                                 <div className="text-xs text-slate-500 mb-1">Trước thay đổi: -</div>
                                                 <div className="text-xs text-slate-500 mb-2">Sau thay đổi: </div>
@@ -840,7 +830,7 @@ export const ClientDetailView = ({ client, projects, contracts, invoices, users,
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="flex flex-col items-center">
-                                                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">1</div>
+                                                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs"></div>
                                             </div>
                                             <div className="border border-slate-200 rounded-lg p-4 flex-1">
                                                 <div className="font-bold text-sm mb-1">Tạo mới</div>

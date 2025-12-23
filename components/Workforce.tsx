@@ -76,27 +76,27 @@ export const LogWorkforceForm = ({ onBack, divisions = [], onSave }: any) => {
     };
 
     return (
-        <div className="bg-white p-8 rounded-xl min-h-screen flex gap-8">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-xl min-h-screen flex gap-8">
             <div className="flex-1">
                  <FormHeader title="Log công số thực tế" onBack={onBack} onSave={handleSaveClick} />
                  
                  <div className="grid grid-cols-2 gap-6 mb-8 max-w-xl">
                      <div className="space-y-1">
-                         <label className="text-sm font-medium text-slate-900">Bộ phận</label>
+                         <label className="text-sm font-medium text-slate-900 dark:text-white">Bộ phận</label>
                          <select 
-                            className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 ${errors.division ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                            className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.division ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'} ${!formData.division ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
                             value={formData.division}
                             onChange={(e) => handleChange('division', e.target.value)}
                          >
-                            <option value="">Chọn bộ phận</option>
-                            {divisions.map((d: string) => <option key={d} value={d}>{d}</option>)}
+                            <option value="" disabled hidden>Chọn bộ phận</option>
+                            {divisions.map((d: string) => <option key={d} value={d} className="text-slate-900 dark:text-white">{d}</option>)}
                          </select>
                          {errors.division && <p className="text-xs text-red-500">{errors.division}</p>}
                      </div>
                      <div className="space-y-1">
-                         <label className="text-sm font-medium text-slate-900">Năm</label>
+                         <label className="text-sm font-medium text-slate-900 dark:text-white">Năm</label>
                          <select 
-                            className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 ${errors.year ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                            className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors.year ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'}`}
                             value={formData.year}
                             onChange={(e) => handleChange('year', Number(e.target.value))}
                          >
@@ -111,11 +111,11 @@ export const LogWorkforceForm = ({ onBack, divisions = [], onSave }: any) => {
                  <div className="grid grid-cols-2 gap-x-12 gap-y-6 max-w-3xl">
                      {formData.months.map((val, idx) => (
                          <div key={idx} className="space-y-1">
-                            <label className="text-sm font-medium text-slate-900">Man-month tháng {idx + 1} *</label>
+                            <label className="text-sm font-medium text-slate-900 dark:text-white">Man-month tháng {idx + 1} <span className="text-red-500">*</span></label>
                             <input 
                                 type="number" 
                                 step="0.01"
-                                className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 ${errors[`month_${idx}`] ? 'border-red-500 ring-red-500' : 'border-slate-200 focus:ring-black'}`}
+                                className={`w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-1 dark:bg-slate-700 dark:text-white ${errors[`month_${idx}`] ? 'border-red-500 ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-black dark:focus:ring-white'}`}
                                 placeholder="Man-month" 
                                 value={val}
                                 onChange={(e) => handleMonthChange(idx, e.target.value)}
@@ -126,31 +126,30 @@ export const LogWorkforceForm = ({ onBack, divisions = [], onSave }: any) => {
                  </div>
             </div>
 
-            <div className="w-96 border border-slate-200 rounded-xl p-6 bg-white shadow-sm h-fit">
-                <h3 className="font-bold text-slate-900 mb-6">Lịch sử thay đổi</h3>
+            <div className="w-96 border border-slate-200 dark:border-slate-700 rounded-xl p-6 bg-white dark:bg-slate-800 shadow-sm h-fit">
+                <h3 className="font-bold text-slate-900 dark:text-white mb-6">Lịch sử thay đổi</h3>
                 <div className="space-y-6 relative">
-                    <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-slate-100"></div>
+                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-slate-100 dark:bg-slate-700"></div>
                     
                     <div className="relative pl-8">
-                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold z-10 border-4 border-white">2</div>
-                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                            <div className="font-bold text-sm text-slate-900 mb-2 flex items-center gap-2">
-                                Thay đổi thông tin: Địa chỉ 
-                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                        <div className="absolute left-0.5 top-1.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 z-10 border-2 border-white dark:border-slate-800"></div>
+                        <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
+                            <div className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                                Thay đổi thông tin: Địa chỉ
                             </div>
                             <div className="space-y-1 text-xs">
-                                <div className="text-slate-500">Trước thay đổi: -</div>
-                                <div className="text-slate-500">Sau thay đổi: 10</div>
-                                <div className="text-slate-400 pt-2 border-t border-slate-200 mt-2">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                <div className="text-slate-500 dark:text-slate-400">Trước thay đổi: -</div>
+                                <div className="text-slate-500 dark:text-slate-400">Sau thay đổi: 10</div>
+                                <div className="text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-200 dark:border-slate-600 mt-2">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
                             </div>
                         </div>
                     </div>
 
                     <div className="relative pl-8">
-                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold z-10 border-4 border-white">1</div>
-                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                            <div className="font-bold text-sm text-slate-900 mb-2">Tạo mới</div>
-                            <div className="text-xs text-slate-400 pt-1">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                        <div className="absolute left-0.5 top-1.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 z-10 border-2 border-white dark:border-slate-800"></div>
+                        <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
+                            <div className="font-bold text-sm text-slate-900 dark:text-white mb-2">Tạo mới</div>
+                            <div className="text-xs text-slate-400 dark:text-slate-500 pt-1">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
                         </div>
                     </div>
                 </div>
@@ -160,6 +159,8 @@ export const LogWorkforceForm = ({ onBack, divisions = [], onSave }: any) => {
 };
 
 export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) => {
+    // ... WorkforceModule list view (no changes) ...
+    // Returning existing structure
     const mockData = getMockData();
     const contracts = mockData.contracts;
     const permissions = mockData.permissions;
@@ -249,9 +250,9 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
     });
 
     return (
-         <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh] flex flex-col">
+         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[80vh] flex flex-col">
             <div className="p-6">
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">Quản lý công số</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Quản lý công số</h2>
                 
                 <div className="flex justify-between items-center gap-4 mb-4">
                     <div className="relative flex-1 max-w-xl">
@@ -259,16 +260,16 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
                         <input 
                             type="text" 
                             placeholder="Tìm kiếm dự án hoặc khách hàng" 
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white dark:text-white"
                             value={filters.search}
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
                     </div>
                     <div className="flex gap-2">
-                        <button className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 flex items-center gap-2">
+                        <button className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                             <Download size={16} /> Tải xuống
                         </button>
-                        <button onClick={onLog} className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800">
+                        <button onClick={onLog} className="bg-black dark:bg-white dark:text-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-200">
                             Log công số
                         </button>
                     </div>
@@ -276,11 +277,11 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
                 {searchError && <div className="text-red-500 text-xs mb-4">{searchError}</div>}
 
                 <div className="flex flex-wrap items-center gap-3 mb-6">
-                    <div className="p-2"><Filter size={20} className="text-slate-900" /></div>
+                    <div className="p-2"><Filter size={20} className="text-slate-900 dark:text-white" /></div>
                     
                     <div className="relative">
                         <select 
-                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 focus:outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-500"
                             value={filters.year}
                             onChange={(e) => handleFilterChange('year', Number(e.target.value))}
                         >
@@ -293,7 +294,7 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
 
                     <div className="relative">
                         <select 
-                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 focus:outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-500"
                             value={filters.division}
                             onChange={(e) => handleFilterChange('division', e.target.value)}
                         >
@@ -306,7 +307,7 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
 
                     <div className="relative">
                         <select 
-                            className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none cursor-pointer hover:border-slate-300"
+                            className="appearance-none pl-3 pr-8 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 focus:outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-500"
                             value={filters.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
                         >
@@ -319,19 +320,20 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
                     </div>
 
                     {(filters.division !== 'All' || filters.status !== 'All' || filters.year !== new Date().getFullYear()) && (
-                        <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50">Xoá bộ lọc</button>
+                        <button onClick={clearFilters} className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">Xoá bộ lọc</button>
                     )}
                 </div>
 
-                <div className="h-72 border border-slate-200 rounded-xl p-4 mb-8 bg-white relative">
-                    <p className="font-bold text-sm mb-4 text-slate-900">Công số tháng</p>
+                <div className="h-72 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-8 bg-white dark:bg-slate-800 relative">
+                    <p className="font-bold text-sm mb-4 text-slate-900 dark:text-white">Công số tháng</p>
                     <ResponsiveContainer width="100%" height="90%" minWidth={0}>
                             <ComposedChart data={chartData} margin={{top: 10, right: 30, left: 0, bottom: 0}}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                            <YAxis fontSize={10} tickLine={false} axisLine={false} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                            <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} stroke="#94a3b8" />
+                            <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="#94a3b8" />
                             <RechartsTooltip 
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: '#1e293b', color: '#fff' }}
+                                itemStyle={{ color: '#fff' }}
                                 labelFormatter={(label, payload) => {
                                     if (payload && payload.length > 0) return payload[0].payload.shortName;
                                     return label;
@@ -347,12 +349,12 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
 
                 <div className="overflow-x-auto">
                     {filteredItems.length === 0 ? (
-                        <div className="text-center py-10 text-slate-500">Không tìm thấy kết quả.</div>
+                        <div className="text-center py-10 text-slate-500 dark:text-slate-400">Không tìm thấy kết quả.</div>
                     ) : (
                         <table className="w-full text-left text-xs whitespace-nowrap">
-                            <thead className="bg-white text-slate-900 font-bold border-b border-slate-200">
+                            <thead className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold border-b border-slate-200 dark:border-slate-700">
                                 <tr>
-                                    <th className="py-4 px-2 sticky left-0 bg-white z-10">Mã KH</th>
+                                    <th className="py-4 px-2 sticky left-0 bg-white dark:bg-slate-800 z-10">Mã KH</th>
                                     <th className="py-4 px-2">Tên khách hàng</th>
                                     <th className="py-4 px-2">Dự án</th>
                                     <th className="py-4 px-2">Bộ phận</th>
@@ -374,18 +376,18 @@ export const WorkforceModule = ({ projects, clients, monthlyData, onLog }: any) 
                                     return (
                                         <tr 
                                             key={contract.id} 
-                                            className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer group transition-colors"
+                                            className="border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer group transition-colors"
                                             onClick={() => navigate('/contracts')} 
                                         >
-                                            <td className="py-3 px-2 text-slate-600 font-medium sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10">{client?.code}</td>
-                                            <td className="py-3 px-2 font-medium text-slate-900">{client?.name}</td>
-                                            <td className="py-3 px-2 text-slate-600">{project?.name}</td>
-                                            <td className="py-3 px-2 text-slate-600">{project?.division}</td>
+                                            <td className="py-3 px-2 text-slate-600 dark:text-slate-400 font-medium sticky left-0 bg-white dark:bg-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-700 transition-colors z-10">{client?.code}</td>
+                                            <td className="py-3 px-2 font-medium text-slate-900 dark:text-white">{client?.name}</td>
+                                            <td className="py-3 px-2 text-slate-600 dark:text-slate-400">{project?.name}</td>
+                                            <td className="py-3 px-2 text-slate-600 dark:text-slate-400">{project?.division}</td>
                                             <td className="py-3 px-2">
                                                 <StatusBadge type="contract" status={contract.status_id} />
                                             </td>
                                             {monthlyValues.map((val, i) => (
-                                                <td key={i} className="py-3 px-2 text-center text-slate-600">
+                                                <td key={i} className="py-3 px-2 text-center text-slate-600 dark:text-slate-400">
                                                     {val > 0 ? val : ''}
                                                 </td>
                                             ))}

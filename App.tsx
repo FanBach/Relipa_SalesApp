@@ -53,6 +53,10 @@ const AppContent = () => {
         setViewMode('form');
         // Pass the client_id as initialData
         setSelectedItem({ client_id: state.createProjectForClient });
+    } else if (state?.createContractForProject && location.pathname === '/contracts') {
+        setViewMode('form');
+        // Pass the project_id and client_id as initialData
+        setSelectedItem({ project_id: state.createContractForProject, client_id: state.clientId });
     } else {
         setViewMode('list');
         setSelectedItem(null);
@@ -80,14 +84,55 @@ const AppContent = () => {
           } else {
               setClients(prev => [{ ...formData, id: clients.length + 1 }, ...prev]);
           }
+      } else if (moduleName === 'contract') {
+          if (formData.id) {
+              setContracts(prev => prev.map(c => c.id === formData.id ? { ...c, ...formData } : c));
+          } else {
+              setContracts(prev => [{ ...formData, id: contracts.length + 1 }, ...prev]);
+          }
       }
-      setViewMode('list');
-      setSelectedItem(null);
+      // Sau khi lưu, kiểm tra xem là tạo mới hay sửa để điều hướng
+      if (selectedItem && selectedItem.id) {
+          // Nếu đang sửa (có selectedItem), quay lại trang chi tiết
+          setViewMode('detail');
+          setSelectedItem({ ...selectedItem, ...formData }); // Cập nhật selectedItem hiển thị ngay
+      } else {
+          // Nếu tạo mới, quay lại danh sách
+          setViewMode('list');
+          setSelectedItem(null);
+      }
   };
 
   const renderModule = (moduleName: string, ListComp: any, DetailComp: any, FormComp: any, dataProps: any) => {
-    if (viewMode === 'form') return <FormComp {...dataProps} initialData={selectedItem} onBack={() => setViewMode('list')} onSave={(data: any) => handleSave(moduleName, data)} />;
-    if (viewMode === 'detail' && selectedItem) return <DetailComp {...dataProps} {...(moduleName === 'client' ? {client: selectedItem} : moduleName === 'project' ? {project: selectedItem} : moduleName === 'contract' ? {contract: selectedItem} : {invoice: selectedItem})} onBack={() => setViewMode('list')} onEdit={() => setViewMode('form')} onNavigate={navigate} />;
+    if (viewMode === 'form') {
+        return (
+            <FormComp 
+                {...dataProps} 
+                initialData={selectedItem} 
+                onBack={() => {
+                    if (selectedItem && selectedItem.id) {
+                        setViewMode('detail'); // Quay về màn hình chi tiết nếu đang sửa
+                    } else {
+                        setViewMode('list'); // Quay về danh sách nếu đang tạo mới
+                    }
+                }} 
+                onSave={(data: any) => handleSave(moduleName, data)} 
+            />
+        );
+    }
+    
+    if (viewMode === 'detail' && selectedItem) {
+        return (
+            <DetailComp 
+                {...dataProps} 
+                {...(moduleName === 'client' ? {client: selectedItem} : moduleName === 'project' ? {project: selectedItem} : moduleName === 'contract' ? {contract: selectedItem} : {invoice: selectedItem})} 
+                onBack={() => setViewMode('list')} 
+                onEdit={() => setViewMode('form')} 
+                onNavigate={navigate} 
+            />
+        );
+    }
+
     return <ListComp {...dataProps} onAdd={() => { setSelectedItem(null); setViewMode('form'); }} onViewDetail={(item: any) => { setSelectedItem(item); setViewMode('detail'); }} />;
   };
 
