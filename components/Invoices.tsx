@@ -185,21 +185,299 @@ export const InvoiceForm = ({ initialData, projects, clients, contracts, onBack,
     );
 };
 
-export const StatementForm = ({ onBack, onSave }: any) => {
+export const StatementForm = ({ onBack, onSave, masterData = [], invoices = [], accounts = [], changeLogs = [], initialData }: any) => {
     const [isUploadMode, setIsUploadMode] = useState(false);
-    const [formData, setFormData] = useState({
-        document_date: '',
-        document_no: '',
-        object_code: '',
-        object_name: '',
-        address: '',
-        receiving_account: '',
-        amount: 0,
-        currency: 'USD',
-        description: '',
-        invoice_code: '',
-        status: 'Chưa xác định'
-    });
+
+    const [formData, setFormData] = useState(() => ({
+        document_date: initialData?.document_date || '',
+        document_no: initialData?.document_no || '',
+        object_code: initialData?.object_code || '',
+        object_name: initialData?.object_name || '',
+        address: initialData?.address || '',
+        receiving_account: initialData?.receiving_account || '',
+        amount: typeof initialData?.amount === 'number' ? initialData.amount : 0,
+        currency: initialData?.currency || 'USD',
+        description: initialData?.description || '',
+        invoice_code: initialData?.invoice_code || '',
+        status: initialData?.status || 'Chưa xác định',
+    }));
+
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Upload states (Items 23-25)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [uploadErrorCode, setUploadErrorCode] = useState<string>('');
+    const [uploadParsedOk, setUploadParsedOk] = useState(false);
+    const [uploadRowCount, setUploadRowCount] = useState<number | null>(null);
+
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const clearUploadState = () => {
+        setSelectedFile(null);
+        setUploadErrorCode('');
+        setUploadParsedOk(false);
+        setUploadRowCount(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    // --- Helpers ---
+    const normalizeText = (s: any) => (s ?? '').toString().trim();
+
+    const setField = (key: string, value: any) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+        if (errors[key]) {
+            setErrors(prev => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+            });
+        }
+    };
+
+    const validateManualForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        const isAlphaNum = (v: string) => /^[a-zA-Z0-9_-]+$/.test(v);
+
+        // 3
+        if (!normalizeText(formData.document_date)) newErrors.document_date = 'ERROR_STATEMENT_DOCUMENT_DATE_REQUIRED';
+
+        // 4
+        const docNo = normalizeText(formData.document_no);
+        if (!docNo) newErrors.document_no = 'ERROR_STATEMENT_DOCUMENT_NO_REQUIRED';
+        else if (docNo.length > 50) newErrors.document_no = 'ERROR_STATEMENT_DOCUMENT_NO_TOO_LONG';
+        else if (!isAlphaNum(docNo)) newErrors.document_no = 'ERROR_STATEMENT_DOCUMENT_NO_INVALID_FORMAT';
+
+        // 5
+        const objCode = normalizeText(formData.object_code);
+        if (!objCode) newErrors.object_code = 'ERROR_STATEMENT_OBJECT_CODE_REQUIRED';
+        else if (objCode.length > 50) newErrors.object_code = 'ERROR_STATEMENT_OBJECT_CODE_TOO_LONG';
+        else if (!isAlphaNum(objCode)) newErrors.object_code = 'ERROR_STATEMENT_OBJECT_CODE_INVALID_FORMAT';
+
+        // 6
+        const objName = normalizeText(formData.object_name);
+        if (!objName) newErrors.object_name = 'ERROR_STATEMENT_OBJECT_NAME_REQUIRED';
+        else if (objName.length > 255) newErrors.object_name = 'ERROR_STATEMENT_OBJECT_NAME_TOO_LONG';
+
+        // 7
+        const addr = normalizeText(formData.address);
+        if (!addr) newErrors.address = 'ERROR_STATEMENT_ADDRESS_REQUIRED';
+        else if (addr.length > 255) newErrors.address = 'ERROR_STATEMENT_ADDRESS_TOO_LONG';
+
+        // 8
+        const acc = normalizeText(formData.receiving_account);
+        if (!acc) newErrors.receiving_account = 'ERROR_STATEMENT_RECEIVING_ACCOUNT_REQUIRED';
+
+        // 9
+        const amount = Number(formData.amount);
+        if (!(amount > 0)) newErrors.amount = 'ERROR_STATEMENT_AMOUNT_INVALID';
+        else if (amount > 999_999_999_999.99) newErrors.amount = 'ERROR_STATEMENT_AMOUNT_EXCEEDS_LIMIT';
+
+        // 10
+        const cur = normalizeText(formData.currency);
+        if (!cur) newErrors.currency = 'ERROR_STATEMENT_CURRENCY_REQUIRED';
+
+        // 11
+        const desc = normalizeText(formData.description);
+        if (desc.length > 2000) newErrors.description = 'ERROR_STATEMENT_DESCRIPTION_TOO_LONG';
+
+        // 12 optional invoice_code -> no validate required
+
+        // 13 optional status -> no validate required (default already)
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // CSV parsing (FE-only) to cover EX003-EX006, EX008, EX009 as much as possible
+    const computeFileFingerprint = async (file: File) => {
+        // lightweight: hash first/last 64KB + name + size
+        const sliceSize = 64 * 1024;
+        const head = await file.slice(0, sliceSize).arrayBuffer();
+        const tail = await file.slice(Math.max(0, file.size - sliceSize), file.size).arrayBuffer();
+        const data = new Uint8Array(head.byteLength + tail.byteLength);
+        data.set(new Uint8Array(head), 0);
+        data.set(new Uint8Array(tail), head.byteLength);
+
+        const digest = await crypto.subtle.digest('SHA-256', data);
+        const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        return `${file.name}|${file.size}|${hex}`;
+    };
+
+    const parseAndValidateCsv = async (file: File) => {
+        try {
+            const text = await file.text();
+            const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length < 2) return { ok: false, code: 'ERROR_STATEMENT_FILE_INVALID_FORMAT' }; // EX003
+
+            // Count rows (excluding header)
+            const rowCount = lines.length - 1;
+            if (rowCount > 1000) return { ok: false, code: 'ERROR_STATEMENT_TOO_MANY_RECORDS', rowCount }; // EX008
+
+            // Header
+            const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const requiredCols = [
+                'document_date',
+                'document_no',
+                'object_code',
+                'object_name',
+                'address',
+                'receiving_account',
+                'amount',
+                'currency',
+            ];
+            const missingCols = requiredCols.filter(c => !header.includes(c));
+            if (missingCols.length > 0) return { ok: false, code: 'ERROR_STATEMENT_FILE_INVALID_FORMAT', rowCount }; // EX003
+
+            const idx = (col: string) => header.indexOf(col);
+
+            // Validate rows
+            const ddmmyyyy = /^\d{2}\/\d{2}\/\d{4}$/; // per EX005 example
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                const get = (c: string) => normalizeText(cols[idx(c)]);
+
+                const docDate = get('document_date');
+                const docNo = get('document_no');
+                const objCode = get('object_code');
+                const objName = get('object_name');
+                const addr = get('address');
+                const recvAcc = get('receiving_account');
+                const amtStr = get('amount');
+                const cur = get('currency');
+
+                // EX004 missing field
+                if (!docDate || !docNo || !objCode || !objName || !addr || !recvAcc || !amtStr || !cur) {
+                    return { ok: false, code: 'ERROR_STATEMENT_ROW_MISSING_FIELD', rowCount };
+                }
+
+                // EX005 invalid values
+                if (!ddmmyyyy.test(docDate)) {
+                    return { ok: false, code: 'ERROR_STATEMENT_ROW_INVALID_VALUE', rowCount };
+                }
+                const amt = Number(amtStr.replace(/,/g, ''));
+                if (!(amt > 0) || amt > 999_999_999_999.99) {
+                    return { ok: false, code: 'ERROR_STATEMENT_ROW_INVALID_VALUE', rowCount };
+                }
+            }
+
+            return { ok: true, rowCount };
+        } catch {
+            return { ok: false, code: 'ERROR_STATEMENT_FILE_PARSE_FAILED' }; // EX006
+        }
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        setUploadErrorCode('');
+        setUploadParsedOk(false);
+        setUploadRowCount(null);
+
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // EX002 size > 10MB
+        if (file.size > 10 * 1024 * 1024) {
+            setUploadErrorCode('ERROR_STATEMENT_FILE_TOO_LARGE');
+            clearUploadState();
+            return;
+        }
+
+        // EX001 type (csv/xlsx/xls)
+        if (!file.name.match(/\.(csv|xlsx|xls)$/i)) {
+            setUploadErrorCode('ERROR_STATEMENT_FILE_INVALID_TYPE');
+            clearUploadState();
+            return;
+        }
+
+        // EX009 duplicate file (best-effort)
+        try {
+            const fp = await computeFileFingerprint(file);
+            const key = 'statement_uploaded_file_fingerprints';
+            const raw = localStorage.getItem(key);
+            const list: string[] = raw ? JSON.parse(raw) : [];
+            if (list.includes(fp)) {
+                setUploadErrorCode('ERROR_STATEMENT_DUPLICATE_FILE');
+                clearUploadState();
+                return;
+            }
+            // tentatively add after validation ok
+            // (avoid blocking user forever on bad file)
+            setSelectedFile(file);
+
+            // For CSV, we can validate structure/rows on FE
+            if (/\.csv$/i.test(file.name)) {
+                const res: any = await parseAndValidateCsv(file);
+                if (!res.ok) {
+                    setUploadErrorCode(res.code);
+                    setUploadParsedOk(false);
+                    setUploadRowCount(res.rowCount ?? null);
+                    return;
+                }
+                setUploadRowCount(res.rowCount ?? null);
+                setUploadParsedOk(true);
+                localStorage.setItem(key, JSON.stringify([...list, fp].slice(-50)));
+                return;
+            }
+
+            // XLSX/XLS: FE-only, no parser here -> treat as "uploaded ok" (server will validate in real integration)
+            setUploadParsedOk(true);
+        } catch {
+            setUploadErrorCode('ERROR_STATEMENT_FILE_PARSE_FAILED');
+            clearUploadState();
+        }
+    };
+
+    const downloadTemplate = () => {
+        // FE-only template: CSV with required headers
+        const headers = [
+            'document_date',
+            'document_no',
+            'object_code',
+            'object_name',
+            'address',
+            'receiving_account',
+            'amount',
+            'currency',
+            'description',
+            'invoice_code',
+            'status',
+        ];
+        const csv = `${headers.join(',')}\n`;
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'statement_template.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleSaveManual = () => {
+        if (!validateManualForm()) return;
+        onSave?.({ mode: 'manual', data: formData });
+    };
+
+    const handleSaveUpload = () => {
+        if (!selectedFile) return;
+        if (!uploadParsedOk) return;
+        // In real integration, this is where you'd upload file & parse on server.
+        onSave?.({ mode: 'upload', file: selectedFile, rowCount: uploadRowCount });
+    };
+
+    // Currency options: prefer masterData if provided; fallback
+    const currencyOptions = useMemo(() => {
+        // If masterData has something like { type: 'currency', code: 'USD' } we can extract; otherwise fallback
+        const fromMaster = (masterData || [])
+            .filter((x: any) => {
+                const t = (x?.type || x?.group || x?.category || '').toString().toLowerCase();
+                return t.includes('currency') || t.includes('tiền') || t.includes('tien');
+            })
+            .map((x: any) => x?.code || x?.value || x?.name)
+            .filter(Boolean);
+        const uniq = Array.from(new Set(fromMaster));
+        const fallback = ['USD', 'VND', 'JPY'];
+        return uniq.length ? uniq : fallback;
+    }, [masterData]);
 
     return (
         <div className="bg-white dark:bg-slate-800 p-10 rounded-xl min-h-screen animate-fade-in">
@@ -217,156 +495,356 @@ export const StatementForm = ({ onBack, onSave }: any) => {
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isUploadMode ? 'border-black dark:border-white' : 'border-slate-400 group-hover:border-slate-500'}`}>
                         {isUploadMode && <div className="w-3.5 h-3.5 bg-black dark:bg-white rounded-full"></div>}
                     </div>
-                    <input type="checkbox" className="hidden" checked={isUploadMode} onChange={() => setIsUploadMode(!isUploadMode)} />
+                    <input
+                        type="checkbox"
+                        className="hidden"
+                        checked={isUploadMode}
+                        onChange={() => {
+                            setIsUploadMode(!isUploadMode);
+                            setErrors({});
+                            setUploadErrorCode('');
+                        }}
+                    />
                     <span className="text-base font-medium text-slate-900 dark:text-white">Upload file</span>
                 </label>
             </div>
 
             {isUploadMode ? (
-                // --- Upload UI ---
-                <div className="flex flex-col items-start gap-12 pl-4 pt-4">
+                // --- Upload UI (Items 23-25) ---
+                <div className="flex flex-col items-start gap-8 pl-4 pt-4">
                     <div className="flex gap-16">
-                        <div className="flex flex-col items-center gap-4 cursor-pointer group">
+                        {/* Tải file mẫu (23) */}
+                        <div className="flex flex-col items-center gap-4 cursor-pointer group" onClick={downloadTemplate}>
                             <div className="w-32 h-32 border-[3px] border-black dark:border-white rounded-2xl flex items-center justify-center relative bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                 <FileText size={56} strokeWidth={1.5} className="text-slate-900 dark:text-white" />
                                 <div className="absolute bottom-6 right-7 bg-white dark:bg-slate-800 rounded-full">
                                     <FileDown size={28} className="text-slate-900 dark:text-white" strokeWidth={2.5} />
                                 </div>
                             </div>
-                            <button className="px-8 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Tải file mẫu</button>
+                            <button className="px-8 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                                Tải file mẫu
+                            </button>
                         </div>
 
+                        {/* Upload file (24) */}
                         <div className="flex flex-col items-center gap-4 cursor-pointer group">
-                             <div className="w-32 h-32 border-[3px] border-black dark:border-white rounded-2xl flex items-center justify-center relative bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                <FileText size={56} strokeWidth={1.5} className="text-slate-900 dark:text-white" />
-                                <div className="absolute bottom-6 right-7 bg-white dark:bg-slate-800 rounded-full">
-                                    <FileUp size={28} className="text-slate-900 dark:text-white" strokeWidth={2.5} />
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept=".csv, .xlsx, .xls"
+                                onChange={handleFileChange}
+                            />
+
+                            {selectedFile ? (
+                                <div
+                                    className={`w-32 h-32 border-[3px] rounded-2xl flex flex-col items-center justify-center relative transition-colors ${
+                                        uploadParsedOk ? 'border-emerald-500 bg-emerald-50' : 'border-black dark:border-white bg-white dark:bg-slate-800'
+                                    }`}
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <span className={`text-xs font-bold px-2 text-center break-all ${uploadParsedOk ? 'text-emerald-700' : 'text-slate-900 dark:text-white'}`}>
+                                        {selectedFile.name}
+                                    </span>
+                                    <button
+                                        onClick={(ev) => { ev.stopPropagation(); clearUploadState(); }}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                                        title="Xoá file"
+                                    >
+                                        <span className="text-[10px] leading-none">✕</span>
+                                    </button>
+                                    {uploadRowCount !== null && (
+                                        <div className="absolute bottom-2 text-[10px] text-slate-500 font-medium">
+                                            {uploadRowCount} bản ghi
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                            <button className="px-8 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Upload file</button>
+                            ) : (
+                                <div
+                                    className="w-32 h-32 border-[3px] border-black dark:border-white rounded-2xl flex items-center justify-center relative bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <FileText size={56} strokeWidth={1.5} className="text-slate-900 dark:text-white" />
+                                    <div className="absolute bottom-6 right-7 bg-white dark:bg-slate-800 rounded-full">
+                                        <FileUp size={28} className="text-slate-900 dark:text-white" strokeWidth={2.5} />
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="px-8 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                            >
+                                {selectedFile ? 'Chọn file khác' : 'Upload file'}
+                            </button>
                         </div>
                     </div>
-                    <button className="px-16 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ml-10">Save</button>
+
+                    {/* Error codes (EX001-EX010, FE-only surface) */}
+                    {uploadErrorCode && (
+                        <div className="ml-10 text-sm text-red-500 font-medium">
+                            {uploadErrorCode}
+                        </div>
+                    )}
+
+                    {/* Save (25) - enabled only when uploaded & parsed OK */}
+                    <button
+                        onClick={handleSaveUpload}
+                        disabled={!selectedFile || !uploadParsedOk}
+                        className={`px-16 py-2.5 rounded-xl text-sm font-medium transition-all ml-10 ${
+                            (!selectedFile || !uploadParsedOk)
+                                ? 'bg-slate-300 cursor-not-allowed text-white'
+                                : 'bg-black text-white hover:bg-slate-800'
+                        }`}
+                    >
+                        Save
+                    </button>
                 </div>
             ) : (
-                // --- Manual Entry UI ---
+                // --- Manual Entry UI (Items 3-22) ---
                 <div className="flex gap-16">
                     <div className="flex-1 max-w-2xl space-y-6">
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Ngày chứng từ <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <input 
-                                    type="date" 
-                                    className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all uppercase placeholder:text-slate-300" 
-                                    placeholder="DD/MM/YYYY"
+                                <input
+                                    type="date"
+                                    value={formData.document_date}
+                                    onChange={(e) => setField('document_date', e.target.value)}
+                                    className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all uppercase placeholder:text-slate-300 ${errors.document_date ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                                    placeholder="YYYY-MM-DD"
                                     onClick={(e) => e.currentTarget.showPicker()}
                                 />
                                 <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                             </div>
+                            {errors.document_date && <p className="text-xs text-red-500">{errors.document_date}</p>}
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Số chứng từ <span className="text-red-500">*</span></label>
-                            <input type="text" placeholder="Số chứng từ" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                            <input
+                                type="text"
+                                value={formData.document_no}
+                                onChange={(e) => setField('document_no', e.target.value)}
+                                maxLength={50}
+                                placeholder="Số chứng từ"
+                                className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all ${errors.document_no ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                            />
+                            {errors.document_no && <p className="text-xs text-red-500">{errors.document_no}</p>}
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Mã đối tượng <span className="text-red-500">*</span></label>
-                            <input type="text" placeholder="Mã đối tượng" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                            <input
+                                type="text"
+                                value={formData.object_code}
+                                onChange={(e) => setField('object_code', e.target.value)}
+                                maxLength={50}
+                                placeholder="Mã đối tượng"
+                                className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all ${errors.object_code ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                            />
+                            {errors.object_code && <p className="text-xs text-red-500">{errors.object_code}</p>}
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Tên đối tượng <span className="text-red-500">*</span></label>
-                            <input type="text" placeholder="Tên đối tượng" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                            <input
+                                type="text"
+                                value={formData.object_name}
+                                onChange={(e) => setField('object_name', e.target.value)}
+                                maxLength={255}
+                                placeholder="Tên đối tượng"
+                                className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all ${errors.object_name ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                            />
+                            {errors.object_name && <p className="text-xs text-red-500">{errors.object_name}</p>}
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Địa chỉ <span className="text-red-500">*</span></label>
-                            <input type="text" placeholder="Địa chỉ" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                            <input
+                                type="text"
+                                value={formData.address}
+                                onChange={(e) => setField('address', e.target.value)}
+                                maxLength={255}
+                                placeholder="Địa chỉ"
+                                className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all ${errors.address ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                            />
+                            {errors.address && <p className="text-xs text-red-500">{errors.address}</p>}
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Tài khoản nhận <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <select className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-400">
-                                    <option>Chọn tài khoản</option>
+                                <select
+                                    value={formData.receiving_account}
+                                    onChange={(e) => setField('receiving_account', e.target.value)}
+                                    className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all ${errors.receiving_account ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} ${!formData.receiving_account ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
+                                >
+                                    <option value="">Chọn tài khoản</option>
+                                    {accounts.map((acc: any) => (
+                                        <option key={acc.id ?? acc.account_number} value={acc.account_number}>
+                                            {acc.bank_name} - {acc.account_number}
+                                        </option>
+                                    ))}
                                 </select>
                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                             </div>
+                            {errors.receiving_account && <p className="text-xs text-red-500">{errors.receiving_account}</p>}
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Số tiền <span className="text-red-500">*</span></label>
-                            <input type="number" placeholder="Nhập số tiền" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
+                            <input
+                                type="number"
+                                min={0}
+                                max={999999999999.99}
+                                step={0.01}
+                                value={formData.amount}
+                                onChange={(e) => setField('amount', Number(e.target.value))}
+                                placeholder="Nhập số tiền"
+                                className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all ${errors.amount ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                            />
+                            {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
                         </div>
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-900 dark:text-white">Đơn vị tiền <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <select className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-400">
-                                    <option>Chọn đơn vị tiền</option>
-                                    <option value="USD">USD</option>
-                                    <option value="VND">VND</option>
-                                    <option value="JPY">JPY</option>
+                                <select
+                                    value={formData.currency}
+                                    onChange={(e) => setField('currency', e.target.value)}
+                                    className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all ${errors.currency ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} ${!formData.currency ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}
+                                >
+                                    <option value="" disabled>Chọn đơn vị tiền</option>
+                                    {currencyOptions.map((c: any) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                            </div>
+                            {errors.currency && <p className="text-xs text-red-500">{errors.currency}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Diễn giải</label>
+                            <textarea
+                                placeholder="Nội dung chi tiết giao dịch..."
+                                maxLength={2000}
+                                value={formData.description}
+                                onChange={(e) => setField('description', e.target.value)}
+                                className={`w-full p-3.5 border rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all h-24 resize-none ${errors.description ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                            />
+                            {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Mã hoá đơn</label>
+                            <div className="relative">
+                                <select
+                                    value={formData.invoice_code}
+                                    onChange={(e) => setField('invoice_code', e.target.value)}
+                                    className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-900 dark:text-white"
+                                >
+                                    <option value="">Chọn hoá đơn liên kết (nếu có)</option>
+                                    {invoices
+                                        .filter((i: any) => i.status_id !== 3 && i.status_id !== 5)
+                                        .map((i: any) => (
+                                            <option key={i.id ?? i.invoice_no} value={i.id}>
+                                                {i.invoice_no} - {i.total_amount} {i.currency}
+                                            </option>
+                                        ))}
                                 </select>
                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                             </div>
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-900 dark:text-white">Diễn giải</label>
-                            <input type="text" placeholder="Nội dung" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-900 dark:text-white">Mã hoá đơn <span className="text-red-500">*</span></label>
-                            <input type="text" placeholder="Mã hoá đơn" className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white transition-all" />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-900 dark:text-white">Trạng thái <span className="text-red-500">*</span></label>
+                            <label className="text-sm font-bold text-slate-900 dark:text-white">Trạng thái</label>
                             <div className="relative">
-                                <select className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-400">
-                                    <option>Chưa xác định</option>
-                                    <option>Chưa duyệt</option>
-                                    <option>Đã duyệt</option>
+                                <select
+                                    value={formData.status}
+                                    onChange={(e) => setField('status', e.target.value)}
+                                    className="w-full p-3.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-slate-700 dark:text-white appearance-none transition-all text-slate-900 dark:text-white"
+                                >
+                                    <option value="Chưa xác định">Chưa xác định</option>
+                                    <option value="Chưa duyệt">Chưa duyệt</option>
+                                    <option value="Đã duyệt">Đã duyệt</option>
                                 </select>
                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                             </div>
                         </div>
 
                         <div className="pt-8 text-center">
-                             <button className="bg-black dark:bg-white text-white dark:text-black px-12 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-200 shadow-lg active:scale-95 transition-all">Lưu</button>
+                            <button onClick={handleSaveManual} className="bg-black dark:bg-white text-white dark:text-black px-12 py-3 rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-200 shadow-lg active:scale-95 transition-all">
+                                Lưu
+                            </button>
                         </div>
                     </div>
 
-                    {/* Right Side History */}
+                    {/* Right Side History (Items 15-22) - UI tĩnh theo mẫu của bạn */}
                     <div className="w-[450px]">
                         <h3 className="font-bold text-slate-900 dark:text-white mb-6">Lịch sử thay đổi</h3>
                         <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 min-h-[200px]">
-                             <div className="space-y-8 relative">
+                            <div className="space-y-8 relative">
                                 <div className="absolute left-[7px] top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-600"></div>
-                                
-                                <div className="relative pl-8">
-                                    <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                                        <div className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                                            Thay đổi thông tin: Địa chỉ
-                                        </div>
-                                        <div className="space-y-1 text-xs mb-3">
-                                            <div className="text-slate-500 dark:text-slate-400"><span className="font-semibold">Trước thay đổi:</span></div>
-                                            <div className="text-slate-500 dark:text-slate-400"><span className="font-semibold">Sau thay đổi:</span></div>
-                                        </div>
-                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
-                                    </div>
-                                </div>
 
-                                <div className="relative pl-8">
-                                    <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                                        <div className="font-bold text-sm text-slate-900 dark:text-white mb-2">Tạo mới</div>
-                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
-                                    </div>
-                                </div>
-                             </div>
+                                {(changeLogs?.length ?? 0) === 0 ? (
+                                    <>
+                                        {/* giữ đúng UI mẫu (2 card như screenshot) */}
+                                        <div className="relative pl-8">
+                                            <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                                                    Thay đổi thông tin: Địa chỉ
+                                                </div>
+                                                <div className="space-y-1 text-xs mb-3">
+                                                    <div className="text-slate-500 dark:text-slate-400"><span className="font-semibold">Trước thay đổi:</span></div>
+                                                    <div className="text-slate-500 dark:text-slate-400"><span className="font-semibold">Sau thay đổi:</span></div>
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="relative pl-8">
+                                            <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white mb-2">Tạo mới</div>
+                                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    changeLogs.map((log: any) => (
+                                        <div key={log.id} className="relative pl-8">
+                                            <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                                                {log.action_type === 'create' ? (
+                                                    <>
+                                                        <div className="font-bold text-sm text-slate-900 dark:text-white mb-2">Tạo mới</div>
+                                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                                            Bởi: {log.changed_by} vào lúc {log.changed_at}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                                                            Thay đổi thông tin: {log.column_name}
+                                                        </div>
+                                                        <div className="space-y-1 text-xs mb-3">
+                                                            <div className="text-slate-500 dark:text-slate-400">
+                                                                <span className="font-semibold">Trước thay đổi:</span> {log.old_value ?? ''}
+                                                            </div>
+                                                            <div className="text-slate-500 dark:text-slate-400">
+                                                                <span className="font-semibold">Sau thay đổi:</span> {log.new_value ?? ''}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                                            Bởi: {log.changed_by} vào lúc {log.changed_at}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
