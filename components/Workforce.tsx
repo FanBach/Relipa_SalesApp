@@ -128,11 +128,8 @@ export const LogWorkforceForm = ({ onBack, divisions = [], onSave }: any) => {
 
             <div className="w-96 border border-slate-200 dark:border-slate-700 rounded-xl p-6 bg-white dark:bg-slate-800 shadow-sm h-fit">
                 <h3 className="font-bold text-slate-900 dark:text-white mb-6">Lịch sử thay đổi</h3>
-                <div className="space-y-6 relative">
-                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-slate-100 dark:bg-slate-700"></div>
-                    
-                    <div className="relative pl-8">
-                        <div className="absolute left-0.5 top-1.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 z-10 border-2 border-white dark:border-slate-800"></div>
+                <div className="space-y-6 relative">                    
+                    <div className="relative">
                         <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
                             <div className="font-bold text-sm text-slate-900 dark:text-white mb-2 flex items-center gap-2">
                                 Thay đổi thông tin: Địa chỉ
@@ -145,8 +142,7 @@ export const LogWorkforceForm = ({ onBack, divisions = [], onSave }: any) => {
                         </div>
                     </div>
 
-                    <div className="relative pl-8">
-                        <div className="absolute left-0.5 top-1.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 z-10 border-2 border-white dark:border-slate-800"></div>
+                    <div className="relative">
                         <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
                             <div className="font-bold text-sm text-slate-900 dark:text-white mb-2">Tạo mới</div>
                             <div className="text-xs text-slate-400 dark:text-slate-500 pt-1">Bởi: Trần Xuân Đức vào lúc 21:30:00 ngày 10/6/2024</div>
